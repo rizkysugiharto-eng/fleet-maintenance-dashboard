@@ -36,6 +36,7 @@ const NAV = [
     items: [
       { to: '/dashboard', label: 'Dashboard KPI', icon: 'dashboard' },
       { to: '/pm', label: 'Perencanaan PM', icon: 'calendar' },
+      { to: '/report', label: 'Laporan Mingguan', icon: 'print' },
     ],
   },
   {
@@ -105,7 +106,11 @@ export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
-  useEffect(() => setMenuOpen(false), [location.pathname]);
+  // Tutup menu HP dan kembali ke atas setiap pindah halaman
+  useEffect(() => {
+    setMenuOpen(false);
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="app">

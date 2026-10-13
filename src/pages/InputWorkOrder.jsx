@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   problem: '',
   start: '',
   end: '',
+  responseHours: '',
   delayReason: '',
   delayHours: '0',
   cost: '',
@@ -37,6 +38,7 @@ export default function InputWorkOrder() {
       if (field === 'type') {
         next.component = value === 'PM' ? PM_COMPONENT : '';
         next.problem = '';
+        if (WO_TYPES[value].group !== 'unscheduled') next.responseHours = '';
       }
       if (field === 'component') next.problem = '';
       // Mengisi waktu selesai berarti pekerjaan sudah selesai
@@ -192,6 +194,22 @@ export default function InputWorkOrder() {
             {...errorProps('cost')}
           />
           {fieldError('cost')}
+        </label>
+
+        <label>
+          Waktu respon (jam)
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={form.responseHours}
+            placeholder={WO_TYPES[form.type].group === 'unscheduled' ? 'contoh: 0.5' : 'Tidak perlu untuk WO terjadwal'}
+            disabled={WO_TYPES[form.type].group !== 'unscheduled'}
+            onChange={(e) => update('responseHours', e.target.value)}
+            {...errorProps('responseHours')}
+          />
+          <span className="hint">Dari unit rusak sampai mekanik mulai menangani.</span>
+          {fieldError('responseHours')}
         </label>
 
         <label>

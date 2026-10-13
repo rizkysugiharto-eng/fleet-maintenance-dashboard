@@ -11,7 +11,7 @@ import { toMs } from '../lib/kpi.js';
 import PageHeader from '../components/PageHeader.jsx';
 
 const PAGE_SIZE = 50;
-const CSV_COLUMNS = ['id', 'siteId', 'unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost', 'source'];
+const CSV_COLUMNS = ['id', 'siteId', 'unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'responseHours', 'delayReason', 'delayHours', 'cost', 'source'];
 
 function CloseWorkOrder({ workOrder, onClose, disabled }) {
   const [open, setOpen] = useState(false);

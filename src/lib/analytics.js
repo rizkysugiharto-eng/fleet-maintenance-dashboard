@@ -126,3 +126,36 @@ export function heatmapCellWorkOrders({ units, workOrders, rowName, rowKey = 'ty
     .filter((wo) => codes.has(wo.unitCode) && clipToPeriod(wo, bucket.start, bucket.end))
     .sort((a, b) => a.start.localeCompare(b.start));
 }
+
+/**
+ * Rincian waktu perbaikan breakdown (MTTR dipecah 3 bagian):
+ *   respon     = unit rusak → mekanik mulai menangani
+ *   menunggu   = tertunda karena part, tools, cuaca, dll. (delayHours)
+ *   pengerjaan = sisa waktu = jam kerja mekanik yang sebenarnya
+ * Hanya WO breakdown yang sudah selesai dan mencatat waktu respon.
+ */
+export function repairBreakdown({ units, workOrders, from, to }) {
+  const done = filterByUnits(workOrders, units).filter((wo) => isUnscheduled(wo.type) && wo.end && startedIn(wo, from, to));
+  const recorded = done.filter((wo) => wo.responseHours != null);
+
+  const parts = recorded.map((wo) => {
+    const total = hoursBetween(toMs(wo.start), toMs(wo.end));
+    const response = Math.min(wo.responseHours, total);
+    const waiting = Math.min(wo.delayHours || 0, total - response);
+    return { wo, total, response, waiting, wrench: total - response - waiting };
+  });
+
+  const average = (items) => {
+    const n = items.length || 1;
+    const sum = (key) => items.reduce((s, p) => s + p[key], 0) / n;
+    return { count: items.length, response: sum('response'), waiting: sum('waiting'), wrench: sum('wrench'), total: sum('total') };
+  };
+
+  const unitType = new Map(units.map((u) => [u.code, u.type]));
+  const types = [...new Set(parts.map((p) => unitType.get(p.wo.unitCode)))];
+  const byType = types
+    .map((type) => ({ name: type, ...average(parts.filter((p) => unitType.get(p.wo.unitCode) === type)) }))
+    .sort((a, b) => b.total - a.total);
+
+  return { overall: average(parts), byType, missing: done.length - recorded.length };
+}

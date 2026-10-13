@@ -24,12 +24,13 @@ Menu disusun mengikuti alur kerja: **① Catat data → ② Pantau pekerjaan →
 | Menu | Isi |
 |---|---|
 | **Beranda** | Penjelasan alur kerja 4 langkah dengan angka live, daftar yang perlu ditindaklanjuti, kondisi armada 30 hari vs target |
-| **Dashboard KPI** | 6 KPI dengan target & tren (B/D events, MTBF, MTTR, PA, MA, UA), tren breakdown terjadwal vs tak terjadwal, status WO, distribusi downtime, analisis delay, heatmap ketersediaan armada (klik sel → daftar WO), ringkasan per tipe unit, PA per unit, pareto komponen |
+| **Dashboard KPI** | 6 KPI dengan target & tren (B/D events, MTBF, MTTR, PA, MA, UA), tren breakdown terjadwal vs tak terjadwal, status WO, distribusi downtime, analisis delay, heatmap ketersediaan armada (klik sel → daftar WO), ringkasan per tipe unit, PA per unit, pareto komponen, rincian waktu perbaikan (respon mekanik → menunggu → pengerjaan) |
 | **Kondisi Unit** | Kartu per unit: Breakdown / Perlu perhatian / Sehat, PA 30 hari, MTBF, sisa HM ke PM |
 | **Detail unit** | Klik kode unit di mana saja (atau cari di header): ringkasan, riwayat WO, grafik HM, KPI bulanan, repeat breakdown |
 | **Laporan Work Order** | Cari & filter, ubah status, tutup WO, export CSV |
 | **Input Work Order** | Form dengan validasi (unit, jenis, komponen, waktu, delay, biaya) |
 | **Hour Meter** | Input pembacaan HM harian dengan validasi (tidak boleh turun / > 24 jam per hari) |
+| **Laporan Mingguan** | Laporan satu klik siap cetak / PDF (2 halaman A4): kesimpulan otomatis, KPI minggu ini vs minggu lalu, unit dengan downtime terlama, komponen, waktu perbaikan, backlog, rencana PM, kolom tanda tangan |
 | **Perencanaan PM** | Forecast PM berbasis HM, PM schedule compliance, PM completion rate |
 | **Backlog** | WO belum selesai + aging (0–7, 8–30, 31–90, > 90 hari) |
 | **Import & Sumber Data** | Asal setiap data, unduh data gabungan (CSV), import WO dari CSV dengan pemeriksaan per baris |
@@ -85,6 +86,9 @@ Definisi setiap KPI ada di [docs/KPI.md](docs/KPI.md).
 3. Jadikan akun Anda Admin di SQL Editor:
    `update public.profiles set role = 'admin' where email = 'email-anda';`
 4. Buka aplikasi → **Database & Login** → login → **Upload data demo ke database**.
+
+Memperbarui database lama: cukup jalankan ulang `supabase/schema.sql` (aman diulang; kolom baru
+seperti `response_hours` ditambahkan otomatis).
 
 Alamat project dan *publishable key* ada di `src/lib/database.js` (bisa diganti lewat
 file `.env`, lihat `.env.example`). Publishable key memang aman berada di kode

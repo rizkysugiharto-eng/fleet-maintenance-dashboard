@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 import { LevelBadge } from '../components/Badges.jsx';
 import ChartCard, { Legend } from '../components/ChartCard.jsx';
-import { HorizontalBarChart, TrendLineChart } from '../components/Charts.jsx';
+import { HorizontalBarChart, StackedBarChart, TrendLineChart } from '../components/Charts.jsx';
 import Heatmap from '../components/Heatmap.jsx';
 import KpiCard from '../components/KpiCard.jsx';
 import Modal from '../components/Modal.jsx';
@@ -22,6 +22,7 @@ import {
   downtimeSplit,
   heatmapCellWorkOrders,
   paByUnit,
+  repairBreakdown,
   statusSummary,
   typeSummary,
 } from '../lib/analytics.js';
@@ -84,6 +85,7 @@ export default function Dashboard() {
       types: typeSummary(args),
       paUnits: paByUnit(args).slice(0, 12),
       pareto: componentPareto(args),
+      repair: repairBreakdown(args),
     };
   }, [valid, units, workOrders, hmIndex, filters.fromDate, filters.toDate]);
 
@@ -253,6 +255,8 @@ export default function Dashboard() {
               </p>
             </ChartCard>
           </div>
+
+          <RepairSection repair={r.repair} mttr={r.kpi.mttr} colors={colors} />
 
           <div className="grid-3">
             <ChartCard title="Distribusi downtime" subtitle="Terjadwal (planned) vs tak terjadwal (unplanned)">
@@ -437,6 +441,90 @@ export default function Dashboard() {
           <WorkOrderTable workOrders={drill.items} />
         </Modal>
       )}
+    </div>
+  );
+}
+
+// Rincian MTTR: respon → menunggu → pengerjaan, per tipe unit
+const REPAIR_PARTS = [
+  { key: 'response', name: 'Respon mekanik', hint: 'unit rusak → mekanik mulai', color: 'series1' },
+  { key: 'waiting', name: 'Menunggu', hint: 'part, tools, cuaca, dll.', color: 'series2' },
+  { key: 'wrench', name: 'Pengerjaan', hint: 'jam kerja perbaikan', color: 'series3' },
+];
+
+function RepairSection({ repair, mttr, colors }) {
+  const o = repair.overall;
+  const series = REPAIR_PARTS.map((p) => ({ key: p.key, name: p.name, color: colors[p.color] }));
+  const biggest = o.count ? [...REPAIR_PARTS].sort((a, b) => o[b.key] - o[a.key])[0] : null;
+  const hours = (v) => `${formatNumber(v, 1)} jam`;
+
+  return (
+    <div className="grid-main-side">
+      <ChartCard
+        title="Rincian waktu perbaikan per tipe unit"
+        subtitle="Rata-rata jam per breakdown, dipecah menjadi respon, menunggu, dan pengerjaan"
+        legend={<Legend items={series.map((s) => ({ label: s.name, color: s.color }))} shape="box" />}
+        rows={repair.byType}
+        columns={[
+          { label: 'Tipe unit', render: (x) => x.name },
+          { label: 'Respon', numeric: true, render: (x) => hours(x.response) },
+          { label: 'Menunggu', numeric: true, render: (x) => hours(x.waiting) },
+          { label: 'Pengerjaan', numeric: true, render: (x) => hours(x.wrench) },
+          { label: 'Total', numeric: true, render: (x) => hours(x.total) },
+          { label: 'Jumlah BD', numeric: true, render: (x) => x.count },
+        ]}
+      >
+        {repair.byType.length ? (
+          <StackedBarChart data={repair.byType} series={series} formatValue={hours} formatTick={(v) => formatNumber(v)} labelWidth={104} />
+        ) : (
+          <p className="muted small">Belum ada breakdown dengan waktu respon tercatat pada filter ini.</p>
+        )}
+      </ChartCard>
+
+      <ChartCard title="Ke mana waktu perbaikan habis?" subtitle={`Rata-rata ${o.count} breakdown selesai · MTTR ${formatNumber(mttr, 1)} jam`}>
+        {o.count ? (
+          <>
+            <div className="split-bar" aria-hidden="true">
+              {REPAIR_PARTS.map((p) => (
+                <div key={p.key} style={{ flex: o[p.key], background: colors[p.color] }} />
+              ))}
+            </div>
+            <div className="split-rows">
+              {REPAIR_PARTS.map((p) => (
+                <div className="split-row" key={p.key}>
+                  <span className="legend-item">
+                    <span className="legend-swatch" style={{ background: colors[p.color], height: 10 }} />
+                    <span>
+                      {p.name} <span className="muted small">· {p.hint}</span>
+                    </span>
+                  </span>
+                  <span className="num">
+                    {hours(o[p.key])} · {formatPercent(o.total ? (o[p.key] / o.total) * 100 : null)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="chart-note">
+              <span className="chart-note-swatch" style={{ background: colors.critical }} aria-hidden="true" />
+              <span>
+                <b>Porsi terbesar: {biggest.name.toLowerCase()}</b> ({formatPercent((o[biggest.key] / o.total) * 100)}).{' '}
+                {biggest.key === 'waiting'
+                  ? 'Percepat pengadaan part & stok part kritis untuk menurunkan MTTR.'
+                  : biggest.key === 'response'
+                    ? 'Tambah mekanik standby, terutama shift malam.'
+                    : 'Fokus pada keterampilan mekanik & prosedur perbaikan.'}
+              </span>
+            </p>
+          </>
+        ) : (
+          <p className="muted small">Belum ada data waktu respon pada filter ini.</p>
+        )}
+        {repair.missing > 0 && (
+          <p className="muted small" style={{ marginTop: 8 }}>
+            {repair.missing} breakdown tidak mencatat waktu respon (mis. data Site A) dan tidak ikut dihitung di sini.
+          </p>
+        )}
+      </ChartCard>
     </div>
   );
 }

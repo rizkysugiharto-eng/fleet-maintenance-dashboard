@@ -37,6 +37,7 @@ export const mapWorkOrder = {
     end: ts(r.end_at),
     component: r.component,
     problem: r.problem,
+    responseHours: r.response_hours == null ? null : Number(r.response_hours),
     delayReason: r.delay_reason,
     delayHours: Number(r.delay_hours),
     cost: Number(r.cost),
@@ -52,6 +53,7 @@ export const mapWorkOrder = {
     end_at: w.end,
     component: w.component,
     problem: w.problem,
+    response_hours: w.responseHours ?? null,
     delay_reason: w.delayReason,
     delay_hours: w.delayHours ?? 0,
     cost: w.cost ?? 0,
@@ -117,7 +119,7 @@ async function loadDatabaseNow() {
     fetchAll(client, 'pm_logs', ['id']),
   ]);
   return {
-    version: 2,
+    version: 3,
     units: units.map(mapUnit.fromDb),
     workOrders: workOrders.map(mapWorkOrder.fromDb),
     hmLogs: hmLogs.map(mapHm.fromDb),

@@ -10,10 +10,10 @@ import { formatNumber } from '../lib/format.js';
 import { normalizeWorkOrder, validateWorkOrder } from '../lib/validation.js';
 import PageHeader from '../components/PageHeader.jsx';
 
-const TEMPLATE_COLUMNS = ['unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost'];
+const TEMPLATE_COLUMNS = ['unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'responseHours', 'delayReason', 'delayHours', 'cost'];
 const TEMPLATE_ROWS = [
-  { unitCode: 'DT-201', type: 'BM', status: 'Completed', start: '2026-01-05T08:00', end: '2026-01-05T15:30', component: 'Hydraulic', problem: 'Hose bocor', delayReason: 'Menunggu part', delayHours: 3, cost: 12500000 },
-  { unitCode: 'EX-001', type: 'PM', status: 'Open', start: '2026-01-06T07:00', end: '', component: 'PM Service', problem: 'Service PM250', delayReason: '', delayHours: 0, cost: 4000000 },
+  { unitCode: 'DT-201', type: 'BM', status: 'Completed', start: '2026-01-05T08:00', end: '2026-01-05T15:30', component: 'Hydraulic', problem: 'Hose bocor', responseHours: 0.5, delayReason: 'Menunggu part', delayHours: 3, cost: 12500000 },
+  { unitCode: 'EX-001', type: 'PM', status: 'Open', start: '2026-01-06T07:00', end: '', component: 'PM Service', problem: 'Service PM250', responseHours: '', delayReason: '', delayHours: 0, cost: 4000000 },
 ];
 const WO_COLUMNS = ['id', 'siteId', ...TEMPLATE_COLUMNS, 'source'];
 

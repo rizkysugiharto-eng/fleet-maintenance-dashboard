@@ -33,6 +33,7 @@ create table if not exists public.work_orders (
   end_at        timestamp,                   -- kosong = unit masih dikerjakan
   component     text,
   problem       text,
+  response_hours numeric check (response_hours >= 0), -- jam dari unit rusak sampai mekanik mulai (kosong = tidak tercatat)
   delay_reason  text,
   delay_hours   numeric not null default 0 check (delay_hours >= 0),
   cost          numeric not null default 0 check (cost >= 0),
@@ -42,6 +43,8 @@ create table if not exists public.work_orders (
   check (end_at is null or end_at > start_at)
 );
 create index if not exists work_orders_unit_idx on public.work_orders (unit_code);
+-- Kolom tambahan versi 3 (aman untuk database yang dibuat dengan skema lama)
+alter table public.work_orders add column if not exists response_hours numeric check (response_hours >= 0);
 create index if not exists work_orders_start_idx on public.work_orders (start_at);
 
 create table if not exists public.hm_logs (

@@ -11,6 +11,7 @@ import HourMeter from './pages/HourMeter.jsx';
 import ImportCenter from './pages/ImportCenter.jsx';
 import InputWorkOrder from './pages/InputWorkOrder.jsx';
 import PmPlanning from './pages/PmPlanning.jsx';
+import Report from './pages/Report.jsx';
 import Units from './pages/Units.jsx';
 import WorkOrders from './pages/WorkOrders.jsx';
 
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/input" element={<InputWorkOrder />} />
         <Route path="/hour-meter" element={<HourMeter />} />
         <Route path="/pm" element={<PmPlanning />} />
+        <Route path="/report" element={<Report />} />
         <Route path="/backlog" element={<Backlog />} />
         <Route path="/import" element={<ImportCenter />} />
         <Route path="/units" element={<Units />} />

@@ -161,3 +161,44 @@ describe('planning', () => {
     expect(agingSummary(items).map((b) => b.value)).toEqual([1, 0, 0, 1]);
   });
 });
+
+describe('rincian waktu perbaikan & laporan mingguan', async () => {
+  const { repairBreakdown } = await import('./analytics.js');
+  const { isoWeek, listWeeks, weekStart, weeklyReport } = await import('./report.js');
+
+  it('memecah durasi breakdown menjadi respon, menunggu, dan pengerjaan', () => {
+    const workOrders = [
+      wo({ id: 'A', responseHours: 1, delayHours: 3 }), // total 10 jam → 1 + 3 + 6
+      wo({ id: 'B', responseHours: null }), // tidak tercatat → dikecualikan
+    ];
+    const r = repairBreakdown({ units: [unit], workOrders, from, to });
+    expect(r.overall).toMatchObject({ count: 1, response: 1, waiting: 3, wrench: 6, total: 10 });
+    expect(r.missing).toBe(1);
+    expect(r.byType[0].name).toBe('Excavator');
+  });
+
+  it('respon + menunggu tidak pernah melebihi total durasi', () => {
+    const r = repairBreakdown({ units: [unit], workOrders: [wo({ responseHours: 8, delayHours: 8 })], from, to });
+    expect(r.overall).toMatchObject({ response: 8, waiting: 2, wrench: 0 });
+  });
+
+  it('minggu dimulai hari Senin dan bernomor ISO', () => {
+    expect(new Date(weekStart(toMs('2025-01-09T10:00'))).getDay()).toBe(1);
+    expect(isoWeek(toMs('2025-01-01'))).toBe(1);
+    expect(isoWeek(toMs('2025-12-29'))).toBe(1); // 29 Des 2025 masuk minggu 1 tahun 2026
+    expect(isoWeek(toMs('2025-12-28'))).toBe(52);
+    const weeks = listWeeks(toMs('2025-01-01'), toMs('2025-01-20'));
+    expect(weeks.map((w) => w.week)).toEqual([3, 2, 1]);
+  });
+
+  it('laporan mingguan membandingkan dengan minggu sebelumnya', () => {
+    const start = toMs('2025-01-06');
+    const end = start + 7 * 24 * 3600 * 1000;
+    const workOrders = [wo({ id: 'A', start: '2025-01-07T00:00', end: '2025-01-07T10:00' })];
+    const rep = weeklyReport({ units: [unit], workOrders, pmLogs: [], hmIndex, start, end, refTime: end });
+    expect(rep.kpi.breakdownCount).toBe(1);
+    expect(rep.prev.breakdownCount).toBe(0);
+    expect(rep.topUnits[0]).toMatchObject({ hours: 10, main: 'Engine · Overheat' });
+    expect(rep.insights.some((t) => t.includes('bertambah dari 0 menjadi 1'))).toBe(true);
+  });
+});
