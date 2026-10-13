@@ -26,7 +26,7 @@ Menu disusun mengikuti alur kerja: **① Catat data → ② Pantau pekerjaan →
 | **Beranda** | Penjelasan alur kerja 4 langkah dengan angka live, daftar yang perlu ditindaklanjuti, kondisi armada 30 hari vs target |
 | **Dashboard KPI** | 6 KPI dengan target & tren (B/D events, MTBF, MTTR, PA, MA, UA), tren breakdown terjadwal vs tak terjadwal, status WO, distribusi downtime, analisis delay, heatmap ketersediaan armada (klik sel → daftar WO), ringkasan per tipe unit, PA per unit, pareto komponen, rincian waktu perbaikan (respon mekanik → menunggu → pengerjaan) |
 | **Kondisi Unit** | Kartu per unit: Breakdown / Perlu perhatian / Sehat, PA 30 hari, MTBF, sisa HM ke PM |
-| **Detail unit** | Klik kode unit di mana saja (atau cari di header): ringkasan, riwayat WO, grafik HM, KPI bulanan, repeat breakdown |
+| **Detail unit** | Klik kode unit di mana saja (atau cari di header): ringkasan, riwayat WO, grafik HM, tren KPI, repeat breakdown — semuanya mengikuti pilihan periode |
 | **Laporan Work Order** | Cari & filter, ubah status, tutup WO, export CSV |
 | **Input Work Order** | Form dengan validasi (unit, jenis, komponen, waktu, delay, biaya) |
 | **Hour Meter** | Input pembacaan HM harian dengan validasi (tidak boleh turun / > 24 jam per hari) |
