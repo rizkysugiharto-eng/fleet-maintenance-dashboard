@@ -22,6 +22,7 @@
   --on-primary: #ffffff;
   --series-1: #2a78d6;
   --series-2: #eb6834;
+  --series-3: #1baf7a;
   --good: #0ca30c;
   --good-text: #0b6b2c;
   --good-soft: #e8f6ea;
@@ -68,6 +69,7 @@
   --on-primary: #141a22;
   --series-1: #3987e5;
   --series-2: #d95926;
+  --series-3: #199e70;
   --good-text: #4cc76a;
   --good-soft: rgba(12, 163, 12, 0.16);
   --warning-text: #f5c044;
@@ -1203,6 +1205,169 @@ tbody tr:last-child td {
   color: var(--text-secondary);
 }
 
+/* ===== Laporan mingguan (lebar setara kertas A4) ===== */
+.report {
+  max-width: 860px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.report-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--brand);
+}
+
+.report-title {
+  font-size: 1.125rem;
+}
+
+.report-date {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+.report-section h3 {
+  font-size: 0.9375rem;
+  margin: 0 0 10px;
+}
+
+.report-insights {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-stats > div {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.report-stats-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-stat {
+  font-size: 1.375rem;
+  font-weight: 650;
+}
+
+.report-sign {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  padding-top: 8px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.report-sign > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-sign span {
+  height: 48px;
+  border-bottom: 1px solid var(--axis);
+}
+
+/* Versi cetak: hanya isi laporan, latar putih, ukuran A4 */
+@media print {
+  :root,
+  :root[data-theme='dark'] {
+    --page: #ffffff;
+    --surface-1: #ffffff;
+    --surface-2: #f8f9fa;
+    --surface-3: #eef0f3;
+    --text-primary: #141a22;
+    --text-secondary: #4a5361;
+    --text-muted: #646d7a;
+    --grid: #e7e9ee;
+    --axis: #cdd2d9;
+    --border: #e3e6eb;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .app {
+    display: block;
+  }
+
+  .app-header,
+  .sidebar,
+  .sidebar-backdrop,
+  .page-header,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  main {
+    padding: 0;
+  }
+
+  .report {
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    gap: 14px;
+    font-size: 12px;
+  }
+
+  .report table {
+    font-size: 11.5px;
+  }
+
+  .report th,
+  .report td {
+    padding: 5px 8px;
+  }
+
+  .report .badge {
+    padding: 0 6px;
+  }
+
+  .report-section,
+  .report-grid,
+  .report-sign {
+    break-inside: avoid;
+  }
+
+  .link-button {
+    color: inherit;
+  }
+}
+
 /* Import */
 .dropzone {
   display: flex;
@@ -1346,6 +1511,18 @@ code.tag {
 
   .status-item {
     grid-template-columns: 110px 1fr 40px;
+  }
+
+  .report {
+    padding: 18px 16px;
+  }
+
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-stats-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

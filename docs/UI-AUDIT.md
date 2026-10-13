@@ -23,6 +23,9 @@ di browser (desktop 1440 px, HP 390 px, tema terang & gelap).
 | Heatmap (gradasi satu warna biru, 5 tingkat) | Terang | ❌ awalnya gagal — tingkat pertama `#b7d3f6` hanya 1,54:1 → **diganti** mulai `#86b6ef` → ✅ lulus |
 | Heatmap | Gelap | ✅ lulus |
 
+| Rincian waktu perbaikan: biru + oranye + hijau-toska `#1baf7a` | Terang | ✅ lulus, ⚠️ toska 2,82:1 di atas putih → diimbangi legenda, tampilan tabel, dan celah 2 px antar segmen |
+| Rincian waktu perbaikan: `#3987e5` + `#d95926` + `#199e70` | Gelap | ✅ Semua cek lulus |
+
 **Merah = masalah terbesar.** Merah memakai warna status *critical* (bukan warna seri),
 sehingga artinya selalu "buruk". Teknik ini disebut *emphasis*: satu batang terburuk
 merah, sisanya biru. Agar tidak bergantung pada warna saja, setiap grafik juga memberi

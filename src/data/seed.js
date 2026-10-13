@@ -24,7 +24,7 @@ export function buildSeedData() {
   const siteB = generateSiteB({ year: 2025 });
 
   return {
-    version: 2,
+    version: 3,
     units: [...unitsA, ...siteB.units],
     workOrders: [...siteA.workOrders, ...siteB.workOrders],
     hmLogs: [...hmLogsA, ...siteB.hmLogs],

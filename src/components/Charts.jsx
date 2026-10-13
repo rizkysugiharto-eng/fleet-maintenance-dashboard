@@ -203,6 +203,50 @@ export function TrendLineChart({ data, series, formatValue, formatTick, domain, 
   );
 }
 
+/**
+ * Grafik batang bertumpuk horizontal (bagian-dari-keseluruhan per kategori).
+ * `series` = [{ key, name, color }]; total ditulis di ujung batang.
+ * Celah 2px warna latar memisahkan tiap segmen.
+ */
+export function StackedBarChart({ data, series, formatValue, formatTick, labelWidth = 96 }) {
+  const colors = useChartColors();
+  const names = Object.fromEntries(series.map((s) => [s.key, s.name]));
+  const height = Math.max(110, data.length * 30 + 36);
+  const totalOf = (row) => series.reduce((sum, s) => sum + (row[s.key] || 0), 0);
+
+  const renderTotal = ({ x, y, width, height: h, index }) => (
+    <text x={x + width + 6} y={y + h / 2} dominantBaseline="middle" fontSize={11} fill={colors.secondary}>
+      {formatValue(totalOf(data[index]))}
+    </text>
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 70, bottom: 0, left: 0 }}>
+        <CartesianGrid horizontal={false} stroke={colors.grid} />
+        <XAxis type="number" tickFormatter={formatTick ?? formatValue} tick={tickStyle(colors.muted)} axisLine={{ stroke: colors.axis }} tickLine={false} />
+        <YAxis type="category" dataKey="name" width={labelWidth} tick={tickStyle(colors.secondary)} axisLine={{ stroke: colors.axis }} tickLine={false} interval={0} />
+        <Tooltip cursor={{ fill: colors.grid, opacity: 0.5 }} content={<ChartTooltip formatValue={formatValue} names={names} />} />
+        {series.map((s, i) => (
+          <Bar
+            key={s.key}
+            dataKey={s.key}
+            stackId="total"
+            fill={s.color}
+            stroke={colors.surface}
+            strokeWidth={2}
+            barSize={16}
+            radius={i === series.length - 1 ? [0, 4, 4, 0] : 0}
+            isAnimationActive={false}
+          >
+            {i === series.length - 1 && <LabelList dataKey={s.key} content={renderTotal} />}
+          </Bar>
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 /** Garis kecil tanpa sumbu untuk kartu KPI. */
 export function Sparkline({ data, dataKey, color }) {
   return (

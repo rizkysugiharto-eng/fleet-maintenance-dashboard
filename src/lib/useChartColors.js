@@ -11,6 +11,7 @@ function readColors() {
   return {
     series1: get('--series-1'),
     series2: get('--series-2'),
+    series3: get('--series-3'),
     grid: get('--grid'),
     axis: get('--axis'),
     muted: get('--text-muted'),

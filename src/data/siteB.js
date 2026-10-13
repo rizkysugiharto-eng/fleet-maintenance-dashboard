@@ -148,17 +148,24 @@ export function generateSiteB({ seed = 77, year = 2025 } = {}) {
           delayReason = 'Cuaca/akses jalan';
           delayHours = random.between(2, 10);
         }
+        // Waktu respon: dari unit rusak sampai mekanik mulai menangani.
+        // Shift malam (18.00–06.00) lebih lambat karena mekanik lebih sedikit.
+        const breakdownAt = dayStart + random.between(6, 22) * HOUR;
+        const hour = new Date(breakdownAt).getHours();
+        const night = hour >= 18 || hour < 6;
+        const responseHours = random.between(0.2, 1.5) + (night ? random.between(0.5, 2.5) : 0) + (random() < 0.06 ? random.between(3, 8) : 0);
         addWorkOrder(
           {
             type: isAccident ? 'BAC' : 'BM',
             component,
             problem: random.pick(COMPONENTS[component]),
+            responseHours: Math.round(responseHours * 10) / 10,
             delayReason,
             delayHours: Math.round(delayHours * 10) / 10,
             cost: isAccident ? random.between(40e6, 250e6) : random.between(5e6, 45e6) + random() * random() * 120e6,
           },
-          dayStart + random.between(6, 22) * HOUR,
-          repair + delayHours,
+          breakdownAt,
+          responseHours + repair + delayHours,
         );
       }
 
@@ -198,6 +205,7 @@ export function generateSiteB({ seed = 77, year = 2025 } = {}) {
       end: stillOpen ? null : formatDateTime(wo.end),
       component: wo.component,
       problem: wo.problem,
+      responseHours: wo.responseHours ?? null,
       delayReason: wo.delayReason,
       delayHours: wo.delayHours,
       cost: Math.round(wo.cost / 1000) * 1000,

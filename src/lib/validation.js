@@ -19,6 +19,10 @@ export function validateWorkOrder(wo, unitByCode) {
   if (wo.end && wo.status !== 'Completed') errors.status = 'WO yang sudah punya waktu selesai harus berstatus Completed.';
   if (wo.delayReason && !DELAY_REASONS.includes(wo.delayReason)) errors.delayReason = 'Alasan delay tidak dikenal.';
   if (!(Number(wo.delayHours) >= 0)) errors.delayHours = 'Jam delay 0 atau lebih.';
+  if (wo.responseHours != null && !(Number(wo.responseHours) >= 0)) errors.responseHours = 'Waktu respon 0 atau lebih.';
+  if (wo.end && wo.start && wo.responseHours != null && Number(wo.responseHours) + Number(wo.delayHours || 0) > (toMs(wo.end) - toMs(wo.start)) / 3600000) {
+    errors.responseHours = 'Waktu respon + delay tidak boleh melebihi lama WO.';
+  }
   if (!(Number(wo.cost) >= 0) || wo.cost === '') errors.cost = 'Biaya 0 atau lebih.';
   return errors;
 }
@@ -33,6 +37,7 @@ export function normalizeWorkOrder(raw) {
     end: String(raw.end ?? '').trim().replace(' ', 'T') || null,
     component: String(raw.component ?? '').trim(),
     problem: String(raw.problem ?? '').trim() || null,
+    responseHours: raw.responseHours === '' || raw.responseHours == null ? null : Number(raw.responseHours),
     delayReason: String(raw.delayReason ?? '').trim() || null,
     delayHours: raw.delayHours === '' || raw.delayHours == null ? 0 : Number(raw.delayHours),
     cost: raw.cost === '' || raw.cost == null ? '' : Number(raw.cost),

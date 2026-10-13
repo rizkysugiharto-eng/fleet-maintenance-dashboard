@@ -26,6 +26,20 @@ Semua rumus ada di [`src/lib/kpi.js`](../src/lib/kpi.js) dan diuji di
 | **PM completion rate** | WO PM selesai ÷ total WO PM | Berapa banyak PM yang sudah dikerjakan |
 | **Repeat breakdown** | B/D pada komponen yang sama ≤ 30 hari dari B/D sebelumnya | Perbaikan yang tidak tuntas |
 
+### Rincian waktu perbaikan (MTTR dipecah)
+
+Setiap breakdown yang sudah selesai dibagi menjadi tiga bagian:
+
+| Bagian | Sumber | Arti |
+|---|---|---|
+| **Respon mekanik** | kolom `responseHours` | Unit rusak → mekanik mulai menangani |
+| **Menunggu** | kolom `delayHours` + alasan delay | Tertunda karena part, tools, cuaca, investigasi insiden |
+| **Pengerjaan** | durasi − respon − menunggu | Jam kerja perbaikan yang sebenarnya |
+
+Bagian terbesar menunjukkan di mana MTTR bisa diturunkan: respon tinggi → tambah mekanik
+standby (terutama shift malam); menunggu tinggi → stok part kritis; pengerjaan tinggi →
+pelatihan & prosedur. WO yang tidak mencatat waktu respon (data Site A) tidak ikut dihitung.
+
 Target bawaan (bisa diubah di `TARGETS`): PA ≥ 85%, MA ≥ 85%, UA ≥ 75%, MTBF ≥ 100 jam, MTTR ≤ 12 jam.
 
 ## Perbedaan dengan rumus di Excel/Power BI lama

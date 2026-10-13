@@ -2,15 +2,16 @@
 // Dipakai sebagai "mode demo": setiap pengunjung punya salinan datanya sendiri.
 // Mode database (Supabase) ada di src/lib/database.js.
 
-const STORAGE_KEY = 'fleet-maintenance-dashboard:v2';
+const STORAGE_KEY = 'fleet-maintenance-dashboard:v3'; // v3: WO punya waktu respon
 const PREFS_KEY = 'fleet-maintenance-dashboard:prefs';
 
 function isValid(data) {
-  return data && data.version === 2 && ['units', 'workOrders', 'hmLogs', 'pmLogs'].every((k) => Array.isArray(data[k]));
+  return data && data.version === 3 && ['units', 'workOrders', 'hmLogs', 'pmLogs'].every((k) => Array.isArray(data[k]));
 }
 
 export function loadLocal() {
   try {
+    localStorage.removeItem('fleet-maintenance-dashboard:v2'); // bersihkan data versi lama (±1 MB)
     const raw = localStorage.getItem(STORAGE_KEY);
     const data = raw && JSON.parse(raw);
     return isValid(data) ? data : null;
