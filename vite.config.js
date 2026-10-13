@@ -6,5 +6,5 @@ export default defineConfig({
   // Path relatif supaya hasil build bisa dibuka di GitHub Pages
   // (https://<username>.github.io/fleet-maintenance-dashboard/)
   base: './',
-  build: { chunkSizeWarningLimit: 800 }, // Recharts cukup besar; aman untuk dashboard
+  build: { chunkSizeWarningLimit: 1200 }, // Recharts + data Site A (JSON) cukup besar; aman untuk dashboard
 });

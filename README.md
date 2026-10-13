@@ -1,125 +1,111 @@
-# Fleet Maintenance Dashboard
+# Fleet Maintenance & Reliability Dashboard
 
-Aplikasi web untuk memonitor **maintenance & reliability armada alat berat**.
-User menginput work order dan sistem langsung menghitung KPI (PA, MTBF, MTTR,
-backlog, biaya) lalu menampilkannya sebagai grafik dan tabel.
+Aplikasi web untuk memonitor **maintenance & reliability armada alat berat**:
+planner/foreman menginput work order dan hour meter, lalu sistem otomatis
+menghitung KPI (PA, MA, UA, MTBF, MTTR, backlog, PM compliance) dan
+menampilkannya sebagai dashboard interaktif.
 
-Project ini adalah pengembangan dari dashboard Power BI saya
-(*Fleet Maintenance & Reliability Dashboard*) menjadi aplikasi web end-to-end.
+Pengembangan dari dashboard Power BI saya menjadi aplikasi web end-to-end
+dengan database dan login.
+
+**Demo:** https://rizkysugiharto-eng.github.io/fleet-maintenance-dashboard/
 
 ![Tampilan dashboard](docs/screenshot-dashboard.png)
 
-> Semua data di aplikasi ini **fiktif (dummy)** dan dibuat untuk keperluan
-> portfolio, bukan data perusahaan mana pun.
+> Semua data **fiktif**: Site A berasal dari dataset latihan Power BI saya
+> (`data/raw/`), Site B dibuat oleh generator data dummy. Bukan data perusahaan mana pun.
 
 ## Fitur
 
-| Halaman | Peran | Fungsi |
-|---|---|---|
-| **Dashboard** | User & Admin | KPI (PA, MTBF, MTTR, jumlah WO, backlog, biaya), PA per unit, tren PA bulanan, pareto komponen breakdown, biaya per unit, downtime per tipe maintenance. Filter periode, tipe unit, dan unit. Setiap grafik bisa dialihkan ke tampilan tabel. |
-| **Input WO** | User & Admin | Form input work order dengan validasi (unit, komponen, waktu mulai/selesai, biaya). WO tanpa waktu selesai tercatat sebagai *Open* (backlog). |
-| **Data WO** | User & Admin | Tabel seluruh work order: pencarian, filter, menutup WO yang masih Open, dan export CSV. |
-| **Master unit** | Admin | Tambah unit baru dan reset data demo. |
-
-Peran User/Admin saat ini disimulasikan lewat pilihan **Peran** di pojok kanan
-atas. Login sungguhan direncanakan di tahap 2 (lihat [Roadmap](#roadmap)).
-
-## Rumus KPI
-
-Semua rumus ada di [`src/lib/kpi.js`](src/lib/kpi.js) dan diuji di
-[`src/lib/kpi.test.js`](src/lib/kpi.test.js).
-
-| KPI | Rumus |
+| Menu | Isi |
 |---|---|
-| Calendar hours | jumlah unit × jam dalam periode |
-| Downtime | total durasi WO (PM, BM, CM) dalam periode; WO yang tumpang tindih pada unit yang sama dihitung sekali; WO *Open* dihitung down sampai akhir periode |
-| **Physical Availability (PA)** | (calendar hours − downtime) ÷ calendar hours × 100% |
-| **MTBF** | jam operasi ÷ jumlah breakdown (BM) |
-| **MTTR** | total jam perbaikan BM ÷ jumlah BM yang sudah selesai |
-| Backlog | jumlah WO berstatus *Open* |
+| **Dashboard** | 6 KPI dengan target & tren (B/D events, MTBF, MTTR, PA, MA, UA), tren breakdown terjadwal vs tak terjadwal, status WO, distribusi downtime, analisis delay, heatmap ketersediaan armada (klik sel → daftar WO), ringkasan per tipe unit, PA per unit, pareto komponen |
+| **Kesehatan Unit** | Kartu per unit: Breakdown / Perlu perhatian / Sehat, PA 30 hari, MTBF, sisa HM ke PM |
+| **Unit 360** | Klik kode unit di mana saja (atau cari di header): ringkasan, riwayat WO, grafik HM, KPI bulanan, repeat breakdown |
+| **Laporan Work Order** | Cari & filter, ubah status, tutup WO, export CSV |
+| **Input Work Order** | Form dengan validasi (unit, jenis, komponen, waktu, delay, biaya) |
+| **Hour Meter** | Input pembacaan HM harian dengan validasi (tidak boleh turun / > 24 jam per hari) |
+| **Perencanaan PM** | Forecast PM berbasis HM, PM schedule compliance, PM completion rate |
+| **Backlog** | WO belum selesai + aging (0–7, 8–30, 31–90, > 90 hari) |
+| **Import & Sumber Data** | Asal setiap data, unduh data gabungan (CSV), import WO dari CSV dengan pemeriksaan per baris |
+| **Database & Login** | Status Supabase, login User/Admin, pilih mode Database / Demo lokal |
+| **Master Unit** (Admin) | Tambah unit, reset data demo |
 
-Penyederhanaan: jam operasi = calendar hours − downtime. Di lapangan, jam
-operasi biasanya diambil dari hour meter (HM) unit dan memisahkan waktu standby.
+Tampilan gelap (bawaan) dan terang, bisa dipakai di HP.
 
-## Cara menjalankan di komputer sendiri
-
-1. Install [Node.js](https://nodejs.org/) versi 22 atau lebih baru.
-2. Clone repo ini, lalu di terminal jalankan:
-
-   ```bash
-   npm install      # mengunduh library yang dibutuhkan
-   npm run dev      # menjalankan aplikasi di http://localhost:5173
-   ```
-
-3. Perintah lain:
-
-   ```bash
-   npm test         # menjalankan tes rumus KPI
-   npm run build    # membuat versi siap publikasi di folder dist/
-   ```
-
-## Struktur project
+## Alur data (end-to-end)
 
 ```
-src/
-├── main.jsx               Titik masuk aplikasi
-├── App.jsx                Header, menu, dan daftar halaman (route)
-├── styles.css             Semua tampilan (warna, layout, mode gelap)
-├── pages/                 Satu file per halaman
-│   ├── Dashboard.jsx
-│   ├── InputWorkOrder.jsx
-│   ├── WorkOrders.jsx
-│   └── Units.jsx
-├── components/            Potongan UI yang dipakai ulang
-│   ├── KpiTile.jsx        Kotak angka KPI
-│   ├── ChartCard.jsx      Kartu grafik + tombol "Lihat tabel"
-│   └── Charts.jsx         Grafik batang & garis (Recharts)
-├── context/
-│   └── DataContext.jsx    Data bersama untuk semua halaman
-├── lib/
-│   ├── kpi.js             Rumus KPI  ← "otak" aplikasi
-│   ├── kpi.test.js        Tes rumus KPI
-│   ├── storage.js         Simpan/baca data (localStorage → nanti database)
-│   ├── format.js          Format angka, rupiah, tanggal
-│   └── useChartColors.js  Warna grafik mengikuti tema terang/gelap
-└── data/
-    └── dummy.js           Generator data dummy 8 unit selama 2025
+Input (form / CSV / Excel)  →  Validasi  →  Database (Supabase)  →  Rumus KPI  →  Dashboard
+src/pages/*                    src/lib/       src/lib/database.js      src/lib/       src/components/
+                               validation.js  (atau localStorage        kpi.js         Charts, Heatmap,
+                                               di mode demo)           analytics.js    KpiCard
+                                                                       planning.js
 ```
-
-### Padanan dengan Power BI
 
 | Power BI | Di project ini |
 |---|---|
-| Sumber data | `src/data/dummy.js` + data input user (`src/lib/storage.js`) |
-| Power Query (cleaning) | Validasi form di `src/pages/InputWorkOrder.jsx` |
-| DAX measure | Fungsi di `src/lib/kpi.js` |
-| Slicer | Filter di atas dashboard |
-| Visual | Komponen di `src/components/Charts.jsx` |
+| Sumber data (Excel) | `data/raw/*.xlsx` → `scripts/convert_excel.py` → `src/data/site-a.json` |
+| Power Query (cleaning) | `src/lib/validation.js` |
+| Data model | Tabel `units`, `work_orders`, `hm_logs`, `pm_logs` di `supabase/schema.sql` |
+| DAX measure | `src/lib/kpi.js`, `analytics.js`, `planning.js` |
+| Slicer | Filter di atas dashboard + pilihan site di header |
+| Row-level security | Login + aturan RLS di `supabase/schema.sql` |
+
+Definisi setiap KPI ada di [docs/KPI.md](docs/KPI.md).
+
+## Menjalankan di komputer sendiri
+
+1. Install [Node.js](https://nodejs.org/) versi 22 atau lebih baru.
+2. Di folder project:
+
+   ```bash
+   npm install      # unduh library
+   npm run dev      # buka http://localhost:5173
+   npm test         # jalankan tes rumus KPI
+   npm run build    # buat versi siap publikasi di folder dist/
+   ```
+
+3. Mengubah data Excel Site A (opsional, butuh Python):
+
+   ```bash
+   pip install openpyxl
+   python scripts/convert_excel.py data/raw/Dummy_Maintenance_Dashboard_Data.xlsx src/data/site-a.json
+   ```
+
+## Menyiapkan database Supabase
+
+1. Supabase → **SQL Editor** → tempel isi [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+2. **Authentication → Users → Add user** (centang *Auto Confirm User*).
+3. Jadikan akun Anda Admin di SQL Editor:
+   `update public.profiles set role = 'admin' where email = 'email-anda';`
+4. Buka aplikasi → **Database & Login** → login → **Upload data demo ke database**.
+
+Alamat project dan *publishable key* ada di `src/lib/database.js` (bisa diganti lewat
+file `.env`, lihat `.env.example`). Publishable key memang aman berada di kode
+website; yang menjaga data adalah aturan RLS. **Jangan pernah** menaruh
+`service_role key` atau password database di repo.
+
+## Struktur folder
+
+```
+data/raw/                  Data mentah Excel (dataset Power BI)
+scripts/convert_excel.py   Konversi Excel → JSON (Python)
+supabase/schema.sql        Tabel, hak akses, dan peran database
+src/
+├── main.jsx · App.jsx     Titik masuk & daftar halaman
+├── styles.css             Seluruh tampilan (warna, layout, tema)
+├── context/DataContext    Data bersama + aksi (simpan ke database / lokal)
+├── data/                  Katalog istilah, data Site A & generator Site B
+├── lib/                   Rumus KPI, analitik, PM, validasi, CSV, database
+├── components/            Layout, grafik, heatmap, kartu KPI, Unit 360, modal
+└── pages/                 Satu file per menu
+```
 
 ## Teknologi
 
-- [React](https://react.dev/): library untuk membangun tampilan (UI)
-- [Vite](https://vite.dev/): alat untuk menjalankan & mem-build aplikasi
-- [Recharts](https://recharts.org/): library grafik
-- [React Router](https://reactrouter.com/): navigasi antar halaman
-- [Vitest](https://vitest.dev/): pengujian rumus KPI
-- GitHub Actions + GitHub Pages: tes & publikasi otomatis
-
-## Publikasi ke GitHub Pages
-
-Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
-otomatis menjalankan tes, build, dan publikasi setiap ada push ke branch `main`.
-Aktifkan sekali di **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-
-## Roadmap
-
-- [x] **Tahap 1 — Frontend + data demo**: dashboard KPI, input & data WO,
-      master unit, data tersimpan di browser (localStorage).
-- [ ] **Tahap 2 — Backend & login**: database PostgreSQL via
-      [Supabase](https://supabase.com/), login, dan hak akses per peran
-      (User/Admin). Cukup mengganti `src/lib/storage.js`.
-- [ ] **Tahap 3 — Fitur lanjutan**: import data dari Excel/CSV, kepatuhan
-      jadwal PM (PM compliance), input hour meter, export laporan PDF.
+React · Vite · Recharts · React Router · Supabase (PostgreSQL + Auth) · Vitest ·
+GitHub Actions + GitHub Pages · Python (konversi data)
 
 ## Lisensi
 

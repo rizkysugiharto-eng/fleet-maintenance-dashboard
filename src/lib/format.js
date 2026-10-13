@@ -47,3 +47,15 @@ export function formatMonth(month) {
   const [y, m] = month.split('-').map(Number);
   return `${MONTHS[m - 1]} ${y}`;
 }
+
+// Tanggal dari milidetik: "31 Des 2025"
+export function formatDateMs(ms) {
+  if (ms == null) return '–';
+  const d = new Date(ms);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Jam ringkas: 1.234 jam
+export function formatHoursShort(value) {
+  return value == null ? '–' : `${formatNumber(value)} jam`;
+}

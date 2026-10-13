@@ -3,19 +3,22 @@
 
 import { useState } from 'react';
 
-export default function ChartCard({ title, subtitle, columns, rows, children }) {
+export default function ChartCard({ title, subtitle, columns, rows, legend, children, className = '' }) {
   const [showTable, setShowTable] = useState(false);
+  const hasTable = columns && rows;
 
   return (
-    <section className="card chart-card">
+    <section className={`card card-pad ${className}`}>
       <header className="card-header">
         <div>
           <h2>{title}</h2>
           {subtitle && <p className="muted">{subtitle}</p>}
         </div>
-        <button type="button" className="btn-ghost" onClick={() => setShowTable((v) => !v)}>
-          {showTable ? 'Lihat grafik' : 'Lihat tabel'}
-        </button>
+        {hasTable && (
+          <button type="button" className="btn-ghost btn-small" onClick={() => setShowTable((v) => !v)}>
+            {showTable ? 'Grafik' : 'Tabel'}
+          </button>
+        )}
       </header>
 
       {showTable ? (
@@ -31,8 +34,8 @@ export default function ChartCard({ title, subtitle, columns, rows, children }) 
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.name}>
+              {rows.map((row, i) => (
+                <tr key={row.name ?? i}>
                   {columns.map((c) => (
                     <td key={c.label} className={c.numeric ? 'num' : undefined}>
                       {c.render(row)}
@@ -44,8 +47,25 @@ export default function ChartCard({ title, subtitle, columns, rows, children }) 
           </table>
         </div>
       ) : (
-        children
+        <>
+          {legend}
+          {children}
+        </>
       )}
     </section>
+  );
+}
+
+// Legenda sederhana: garis/kotak warna + nama seri
+export function Legend({ items, shape = 'line' }) {
+  return (
+    <div className="legend" aria-hidden="true">
+      {items.map((item) => (
+        <span key={item.label} className="legend-item">
+          <span className="legend-swatch" style={{ background: item.color, height: shape === 'line' ? 3 : 10 }} />
+          {item.label}
+        </span>
+      ))}
+    </div>
   );
 }

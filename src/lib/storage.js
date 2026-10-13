@@ -1,32 +1,25 @@
-// Lapisan penyimpanan data (data layer).
-//
-// Tahap 1 (sekarang): data disimpan di localStorage browser, jadi tiap
-// pengunjung punya salinan data demonya sendiri.
-// Tahap 2: file inilah yang diganti untuk membaca/menulis ke database
-// (Supabase). Halaman-halaman lain tidak perlu diubah.
+// Penyimpanan lokal di browser (localStorage).
+// Dipakai sebagai "mode demo": setiap pengunjung punya salinan datanya sendiri.
+// Mode database (Supabase) ada di src/lib/database.js.
 
-import { generateDummyData } from '../data/dummy.js';
-
-const STORAGE_KEY = 'fleet-maintenance-dashboard:v1';
+const STORAGE_KEY = 'fleet-maintenance-dashboard:v2';
+const PREFS_KEY = 'fleet-maintenance-dashboard:prefs';
 
 function isValid(data) {
-  return data && Array.isArray(data.units) && Array.isArray(data.workOrders);
+  return data && data.version === 2 && ['units', 'workOrders', 'hmLogs', 'pmLogs'].every((k) => Array.isArray(data[k]));
 }
 
-export function loadData() {
+export function loadLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (isValid(data)) return data;
-    }
+    const data = raw && JSON.parse(raw);
+    return isValid(data) ? data : null;
   } catch {
-    // localStorage bisa diblokir (mode private) → pakai data dummy
+    return null; // localStorage bisa diblokir (mode private)
   }
-  return generateDummyData();
 }
 
-export function saveData(data) {
+export function saveLocal(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -34,11 +27,27 @@ export function saveData(data) {
   }
 }
 
-export function resetData() {
+export function clearLocal() {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
     // abaikan
   }
-  return generateDummyData();
+}
+
+// Preferensi tampilan (tema, site terpilih)
+export function loadPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(PREFS_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export function savePrefs(prefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // abaikan
+  }
 }

@@ -1,95 +1,109 @@
-// Halaman dashboard: filter → KPI → grafik.
-// Semua angka dihitung ulang otomatis dari data work order setiap kali
-// filter atau data berubah (seperti slicer di Power BI).
+// Halaman Dashboard: filter → KPI → grafik.
+// Semua angka dihitung ulang otomatis setiap kali filter atau data berubah
+// (seperti slicer di Power BI).
 
 import { useMemo, useState } from 'react';
-import ChartCard from '../components/ChartCard.jsx';
+import ChartCard, { Legend } from '../components/ChartCard.jsx';
 import { HorizontalBarChart, TrendLineChart } from '../components/Charts.jsx';
-import KpiTile from '../components/KpiTile.jsx';
+import Heatmap from '../components/Heatmap.jsx';
+import KpiCard from '../components/KpiCard.jsx';
+import Modal from '../components/Modal.jsx';
+import WorkOrderTable from '../components/WorkOrderTable.jsx';
 import { useData } from '../context/DataContext.jsx';
-import { WO_TYPES } from '../data/dummy.js';
+import { STATUSES, WO_TYPES } from '../data/catalog.js';
 import {
-  TARGET_PA,
-  addMonths,
-  breakdownByComponent,
-  calcKpi,
-  costByUnit,
-  dataMonthRange,
+  STATUS_ORDER,
+  breakdownTrend,
+  componentPareto,
+  delayAnalysis,
   downtimeByType,
-  monthStart,
-  monthlyPa,
+  downtimeHeatmap,
+  downtimeSplit,
+  heatmapCellWorkOrders,
   paByUnit,
-} from '../lib/kpi.js';
-import {
-  formatHours,
-  formatMonth,
-  formatNumber,
-  formatPercent,
-  formatRupiah,
-  formatRupiahCompact,
-} from '../lib/format.js';
+  statusSummary,
+  typeSummary,
+} from '../lib/analytics.js';
+import { formatDateMs, formatHours, formatNumber, formatPercent, formatRupiahCompact } from '../lib/format.js';
+import { DAY, TARGETS, buildBuckets, calcKpi, kpiSeries, periodFromDates } from '../lib/kpi.js';
+import { formatDate } from '../data/simulate.js';
+import { useChartColors } from '../lib/useChartColors.js';
 
 const percentTick = (v) => `${v}%`;
 const hoursValue = (v) => `${formatNumber(v)} jam`;
-const costTick = (v) => (v === 0 ? '0' : v >= 1e9 ? `${formatNumber(v / 1e9, 1)} M` : `${formatNumber(v / 1e6)} jt`);
+const STATUS_COLOR_KEY = { Completed: 'good', 'In Progress': 'warning', 'Waiting Part': 'serious', Open: 'critical' };
 
 export default function Dashboard() {
-  const { units, workOrders } = useData();
-  const range = useMemo(() => dataMonthRange(workOrders), [workOrders]);
-  const [filters, setFilters] = useState({
-    fromMonth: range.min,
-    toMonth: range.max,
-    unitType: '',
-    unitCode: '',
-  });
+  const { units: siteUnits, workOrders, hmIndex, refTime, openUnit } = useData();
+  const colors = useChartColors();
+
+  const defaultFrom = useMemo(() => {
+    const first = workOrders.reduce((min, wo) => (wo.start < min ? wo.start : min), '9999');
+    return first === '9999' ? formatDate(refTime - 30 * DAY) : first.slice(0, 10);
+  }, [workOrders, refTime]);
+  const [filters, setFilters] = useState({ fromDate: defaultFrom, toDate: formatDate(refTime - DAY), unitType: '', unitCode: '' });
+  const [drill, setDrill] = useState(null);
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, ...(key === 'unitType' ? { unitCode: '' } : {}) }));
 
-  const unitTypes = [...new Set(units.map((u) => u.type))];
-  const unitsOfType = units.filter((u) => !filters.unitType || u.type === filters.unitType);
-  const selectedUnits = useMemo(
-    () =>
-      units.filter(
-        (u) => (!filters.unitType || u.type === filters.unitType) && (!filters.unitCode || u.code === filters.unitCode),
-      ),
-    [units, filters.unitType, filters.unitCode],
+  const unitTypes = [...new Set(siteUnits.map((u) => u.type))].sort();
+  const unitsOfType = siteUnits.filter((u) => !filters.unitType || u.type === filters.unitType);
+  const units = useMemo(
+    () => siteUnits.filter((u) => (!filters.unitType || u.type === filters.unitType) && (!filters.unitCode || u.code === filters.unitCode)),
+    [siteUnits, filters.unitType, filters.unitCode],
   );
-  const periodValid = filters.fromMonth && filters.toMonth && filters.fromMonth <= filters.toMonth;
+  const valid = filters.fromDate && filters.toDate && filters.fromDate <= filters.toDate;
 
-  const results = useMemo(() => {
-    if (!periodValid) return null;
-    const args = {
-      units: selectedUnits,
-      workOrders,
-      from: monthStart(filters.fromMonth),
-      to: monthStart(addMonths(filters.toMonth, 1)),
-    };
+  const r = useMemo(() => {
+    if (!valid || units.length === 0) return null;
+    const { from, to } = periodFromDates(filters.fromDate, filters.toDate);
+    const args = { units, workOrders, hmIndex, from, to };
+    const days = (to - from) / DAY;
+    const allBuckets = buildBuckets(from, to);
+    // Periode terakhir yang tidak lengkap (mis. minggu yang baru 1 hari) disembunyikan dari grafik tren
+    // supaya tidak terlihat seperti penurunan drastis
+    const trendBuckets = allBuckets.length > 2 && allBuckets.at(-1).partial ? allBuckets.slice(0, -1) : allBuckets;
+    const sparkBuckets = buildBuckets(from, to, days > 120 ? 'month' : days > 21 ? 'week' : 'day');
+    const heatBuckets = allBuckets;
     return {
+      from,
+      to,
       kpi: calcKpi(args),
-      paUnits: paByUnit(args).sort((a, b) => a.value - b.value),
-      trend: monthlyPa({ units: selectedUnits, workOrders, fromMonth: filters.fromMonth, toMonth: filters.toMonth }),
-      byType: downtimeByType(args).map((r) => ({ ...r, name: WO_TYPES[r.name] ?? r.name })),
-      pareto: breakdownByComponent(args),
-      cost: costByUnit(args),
+      spark: kpiSeries({ units, workOrders, hmIndex, buckets: sparkBuckets }),
+      trend: breakdownTrend({ units, workOrders, buckets: trendBuckets }),
+      granularity: trendBuckets[0]?.granularity,
+      status: statusSummary(args),
+      split: downtimeSplit(args),
+      delay: delayAnalysis(args),
+      byType: downtimeByType(args),
+      heatBuckets,
+      heat: downtimeHeatmap({ units, workOrders, buckets: heatBuckets }),
+      types: typeSummary(args),
+      paUnits: paByUnit(args).slice(0, 12),
+      pareto: componentPareto(args),
     };
-  }, [periodValid, selectedUnits, workOrders, filters.fromMonth, filters.toMonth]);
+  }, [valid, units, workOrders, hmIndex, filters.fromDate, filters.toDate]);
+
+  const perLabel = { day: 'per hari', week: 'per minggu', month: 'per bulan' };
 
   return (
     <div className="page">
       <div className="page-title">
-        <h1>Dashboard Maintenance &amp; Reliability</h1>
-        <p className="muted">KPI armada alat berat, dihitung otomatis dari data work order.</p>
+        <div>
+          <h1>Fleet Reliability &amp; Performance</h1>
+          <p className="muted">KPI armada dihitung otomatis dari work order dan hour meter. Klik grafik atau kode unit untuk detail.</p>
+        </div>
       </div>
 
-      <div className="filters" role="group" aria-label="Filter dashboard">
+      <div className="card filters" role="group" aria-label="Filter dashboard">
         <label>
-          Dari bulan
-          <input type="month" value={filters.fromMonth} onChange={(e) => setFilter('fromMonth', e.target.value)} />
+          Dari tanggal
+          <input type="date" value={filters.fromDate} onChange={(e) => setFilter('fromDate', e.target.value)} />
         </label>
         <label>
-          Sampai bulan
-          <input type="month" value={filters.toMonth} onChange={(e) => setFilter('toMonth', e.target.value)} />
+          Sampai tanggal
+          <input type="date" value={filters.toDate} onChange={(e) => setFilter('toDate', e.target.value)} />
         </label>
         <label>
           Tipe unit
@@ -109,113 +123,308 @@ export default function Dashboard() {
             ))}
           </select>
         </label>
+        <div className="filters-action">
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setFilters({ fromDate: defaultFrom, toDate: formatDate(refTime - DAY), unitType: '', unitCode: '' })}
+          >
+            Reset filter
+          </button>
+        </div>
       </div>
 
-      {!periodValid && <p className="alert">Bulan awal harus sama dengan atau sebelum bulan akhir.</p>}
+      {!valid && <p className="alert">Tanggal awal harus sama dengan atau sebelum tanggal akhir.</p>}
+      {valid && units.length === 0 && <p className="alert alert-info">Tidak ada unit untuk filter ini.</p>}
 
-      {results && (
+      {r && (
         <>
           <div className="kpi-grid">
-            <KpiTile
-              hero
-              label="Physical Availability (PA)"
-              value={formatPercent(results.kpi.pa)}
-              status={
-                results.kpi.pa == null
-                  ? null
-                  : results.kpi.pa >= TARGET_PA
-                    ? { level: 'good', text: `Memenuhi target ${TARGET_PA}%` }
-                    : { level: 'critical', text: `Di bawah target ${TARGET_PA}%` }
-              }
+            <KpiCard
+              kpiKey="breakdownCount"
+              label="B/D EVENTS"
+              description="Jumlah unit rusak mendadak (tak terjadwal)"
+              value={r.kpi.breakdownCount}
+              display={formatNumber(r.kpi.breakdownCount)}
+              note={`${formatNumber(r.kpi.unscheduledDowntime)} jam down`}
+              series={r.spark}
+              color={colors.series1}
             />
-            <KpiTile label="MTBF" value={formatHours(results.kpi.mtbf)} note={`${formatNumber(results.kpi.breakdownCount)} breakdown`} />
-            <KpiTile label="MTTR" value={formatHours(results.kpi.mttr)} note="Rata-rata waktu perbaikan BM" />
-            <KpiTile label="Jumlah work order" value={formatNumber(results.kpi.woCount)} note={`${formatNumber(results.kpi.downtimeHours)} jam downtime`} />
-            <KpiTile label="Backlog (WO open)" value={formatNumber(results.kpi.backlog)} note="WO yang belum selesai" />
-            <KpiTile label="Total biaya" value={formatRupiahCompact(results.kpi.cost)} note="Biaya WO dalam periode" />
+            <KpiCard
+              kpiKey="mtbf"
+              label="MTBF"
+              description="Rata-rata jam kerja sebelum unit rusak"
+              value={r.kpi.mtbf}
+              display={formatHours(r.kpi.mtbf)}
+              series={r.spark}
+              color={colors.series1}
+            />
+            <KpiCard
+              kpiKey="mttr"
+              label="MTTR"
+              description="Rata-rata lama perbaikan saat rusak"
+              value={r.kpi.mttr}
+              display={formatHours(r.kpi.mttr)}
+              series={r.spark}
+              color={colors.series1}
+            />
+            <KpiCard
+              kpiKey="pa"
+              label="PA · Physical Availability"
+              description="% waktu unit siap pakai (tidak sedang diperbaiki)"
+              value={r.kpi.pa}
+              display={formatPercent(r.kpi.pa)}
+              series={r.spark}
+              color={colors.series1}
+            />
+            <KpiCard
+              kpiKey="ma"
+              label="MA · Mechanical Availability"
+              description="Jam kerja dibanding jam kerja + jam perbaikan"
+              value={r.kpi.ma}
+              display={formatPercent(r.kpi.ma)}
+              series={r.spark}
+              color={colors.series1}
+            />
+            <KpiCard
+              kpiKey="ua"
+              label="UA · Use of Availability"
+              description="% waktu siap pakai yang benar-benar dipakai bekerja"
+              value={r.kpi.ua}
+              display={formatPercent(r.kpi.ua)}
+              series={r.spark}
+              color={colors.series1}
+            />
           </div>
 
-          <div className="chart-grid">
+          <div className="grid-main-side">
             <ChartCard
-              title="PA per unit"
-              subtitle="Diurutkan dari PA terendah"
-              rows={results.paUnits}
+              title="Tren frekuensi breakdown"
+              subtitle={`Jumlah WO ${perLabel[r.granularity]}, tak terjadwal vs terjadwal`}
+              legend={
+                <Legend
+                  items={[
+                    { label: 'Tak terjadwal (BM + BAC)', color: colors.series1 },
+                    { label: 'Terjadwal (PM + CM)', color: colors.series2 },
+                  ]}
+                />
+              }
+              rows={r.trend}
               columns={[
-                { label: 'Unit', render: (r) => r.name },
-                { label: 'PA', numeric: true, render: (r) => formatPercent(r.value) },
-              ]}
-            >
-              <HorizontalBarChart
-                data={results.paUnits}
-                formatValue={formatPercent}
-                formatTick={percentTick}
-                domainMax={100}
-                target={TARGET_PA}
-                targetLabel={`Target ${TARGET_PA}%`}
-              />
-            </ChartCard>
-
-            <ChartCard
-              title="Tren PA bulanan"
-              subtitle="Unit sesuai filter"
-              rows={results.trend}
-              columns={[
-                { label: 'Bulan', render: (r) => formatMonth(r.name) },
-                { label: 'PA', numeric: true, render: (r) => formatPercent(r.value) },
+                { label: 'Periode', render: (x) => x.name },
+                { label: 'Tak terjadwal', numeric: true, render: (x) => x.unscheduled },
+                { label: 'Terjadwal', numeric: true, render: (x) => x.scheduled },
               ]}
             >
               <TrendLineChart
-                data={results.trend}
+                data={r.trend}
+                series={[
+                  { key: 'unscheduled', name: 'Tak terjadwal', color: colors.series1 },
+                  { key: 'scheduled', name: 'Terjadwal', color: colors.series2 },
+                ]}
+                formatValue={(v) => `${formatNumber(v)} WO`}
+                formatTick={(v) => formatNumber(v)}
+                height={230}
+              />
+            </ChartCard>
+
+            <ChartCard title="Status work order" subtitle="WO dalam periode + WO belum selesai">
+              <div className="status-list">
+                {STATUS_ORDER.map((name) => {
+                  const row = r.status.find((s) => s.name === name);
+                  const max = Math.max(1, ...r.status.map((s) => s.value));
+                  return (
+                    <div className="status-item" key={name} title={STATUSES[name].hint}>
+                      <span>
+                        <b>{name}</b>
+                        <br />
+                        <span className="muted small">{STATUSES[name].hint}</span>
+                      </span>
+                      <div className="status-track">
+                        <div className="status-fill" style={{ width: `${(row.value / max) * 100}%`, background: colors[STATUS_COLOR_KEY[name]] }} />
+                      </div>
+                      <span className="num mono">{formatNumber(row.value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="muted small" style={{ marginTop: 12 }}>
+                Backlog (belum selesai): <b>{formatNumber(r.kpi.backlog)}</b> WO · Biaya periode: <b>{formatRupiahCompact(r.kpi.cost)}</b>
+              </p>
+            </ChartCard>
+          </div>
+
+          <div className="grid-3">
+            <ChartCard title="Distribusi downtime" subtitle="Terjadwal (planned) vs tak terjadwal (unplanned)">
+              <div className="split-bar" aria-hidden="true">
+                <div style={{ flex: r.split.planned, background: colors.series2 }} />
+                <div style={{ flex: r.split.unplanned, background: colors.series1 }} />
+              </div>
+              <div className="split-rows">
+                {[
+                  ['Terjadwal (PM + CM)', r.split.planned, colors.series2],
+                  ['Tak terjadwal (BM + BAC)', r.split.unplanned, colors.series1],
+                ].map(([label, value, color]) => (
+                  <div className="split-row" key={label}>
+                    <span className="legend-item">
+                      <span className="legend-swatch" style={{ background: color, height: 10 }} />
+                      {label}
+                    </span>
+                    <span className="mono">
+                      {formatNumber(value)} jam · {formatPercent(r.split.total ? (value / r.split.total) * 100 : null)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="muted small" style={{ marginTop: 10 }}>
+                Makin besar porsi terjadwal, makin baik: kerusakan dicegah lewat PM, bukan diperbaiki setelah rusak.
+              </p>
+            </ChartCard>
+
+            <ChartCard
+              title="Analisis delay"
+              subtitle="Penyebab perbaikan tertunda — total jam & berapa kali"
+              rows={r.delay}
+              columns={[
+                { label: 'Alasan', render: (x) => x.name },
+                { label: 'Jam', numeric: true, render: (x) => formatNumber(x.value) },
+                { label: 'Frekuensi', numeric: true, render: (x) => `${x.count}×` },
+              ]}
+            >
+              {r.delay.length ? (
+                <HorizontalBarChart
+                  data={r.delay}
+                  formatValue={(v, row) => `${formatNumber(v)} jam${row ? ` · ${row.count}×` : ''}`}
+                  formatTick={(v) => formatNumber(v)}
+                  labelWidth={124}
+                />
+              ) : (
+                <p className="muted small">Data delay tidak tersedia (dataset Site A tidak mencatat alasan delay).</p>
+              )}
+            </ChartCard>
+
+            <ChartCard
+              title="Downtime per jenis WO"
+              subtitle="Total jam down"
+              rows={r.byType}
+              columns={[
+                { label: 'Jenis', render: (x) => `${x.name} · ${WO_TYPES[x.name]?.label}` },
+                { label: 'Jam', numeric: true, render: (x) => formatNumber(x.value) },
+                { label: 'Jumlah WO', numeric: true, render: (x) => x.count },
+              ]}
+            >
+              <HorizontalBarChart data={r.byType} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} labelWidth={44} />
+              <p className="muted small">PM = servis berkala · CM = perbaikan terencana · BM = rusak mendadak · BAC = rusak karena insiden</p>
+            </ChartCard>
+          </div>
+
+          <ChartCard
+            title="Heatmap ketersediaan armada"
+            subtitle={`Rata-rata jam down per unit, ${perLabel[r.heatBuckets[0]?.granularity]} — klik sel untuk melihat WO penyebabnya`}
+          >
+            <Heatmap
+              rows={r.heat.rows}
+              buckets={r.heatBuckets}
+              max={r.heat.max}
+              onSelect={(rowName, bucket) =>
+                setDrill({ rowName, bucket, items: heatmapCellWorkOrders({ units, workOrders, rowName, bucket }) })
+              }
+            />
+          </ChartCard>
+
+          <ChartCard title="Ringkasan per tipe unit" subtitle="Diurutkan dari downtime terbesar">
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipe unit</th>
+                    <th className="num">Unit</th>
+                    <th className="num">B/D</th>
+                    <th className="num">Jam operasi</th>
+                    <th className="num">Downtime</th>
+                    <th className="num">PA</th>
+                    <th className="num">MA</th>
+                    <th className="num">UA</th>
+                    <th className="num">MTBF</th>
+                    <th className="num">Biaya</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.types.map((t) => (
+                    <tr key={t.name}>
+                      <td>
+                        <button type="button" className="link-button" onClick={() => setFilter('unitType', t.name)}>
+                          {t.name}
+                        </button>
+                      </td>
+                      <td className="num">{t.unitCount}</td>
+                      <td className="num">{formatNumber(t.breakdownCount)}</td>
+                      <td className="num">{formatNumber(t.operatingHours)}</td>
+                      <td className="num">{formatNumber(t.downtimeHours)}</td>
+                      <td className={`num ${t.pa >= TARGETS.pa.value ? 'status-good' : 'status-critical'}`}>{formatPercent(t.pa)}</td>
+                      <td className="num">{formatPercent(t.ma)}</td>
+                      <td className="num">{formatPercent(t.ua)}</td>
+                      <td className="num">{formatHours(t.mtbf)}</td>
+                      <td className="num nowrap">{formatRupiahCompact(t.cost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ChartCard>
+
+          <div className="grid-2">
+            <ChartCard
+              title="PA terendah per unit"
+              subtitle={`12 unit dengan PA terendah · target ${TARGETS.pa.value}% · klik batang untuk Unit 360`}
+              rows={r.paUnits}
+              columns={[
+                { label: 'Unit', render: (x) => x.name },
+                { label: 'PA', numeric: true, render: (x) => formatPercent(x.value) },
+              ]}
+            >
+              <HorizontalBarChart
+                data={r.paUnits}
                 formatValue={formatPercent}
                 formatTick={percentTick}
-                formatLabel={formatMonth}
-                domain={[0, 100]}
-                target={TARGET_PA}
-                targetLabel={`Target ${TARGET_PA}%`}
+                domainMax={100}
+                target={TARGETS.pa.value}
+                targetLabel={`Target ${TARGETS.pa.value}%`}
+                labelWidth={64}
+                onSelect={openUnit}
               />
             </ChartCard>
 
             <ChartCard
               title="Pareto komponen breakdown"
-              subtitle="Jam downtime BM per komponen"
-              rows={results.pareto}
+              subtitle="Jam down breakdown tak terjadwal per komponen"
+              rows={r.pareto}
               columns={[
-                { label: 'Komponen', render: (r) => r.name },
-                { label: 'Downtime', numeric: true, render: (r) => hoursValue(r.value) },
+                { label: 'Komponen', render: (x) => x.name },
+                { label: 'Jam', numeric: true, render: (x) => formatNumber(x.value) },
+                { label: 'Kejadian', numeric: true, render: (x) => x.count },
               ]}
             >
-              <HorizontalBarChart data={results.pareto} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} />
+              {r.pareto.length ? (
+                <HorizontalBarChart data={r.pareto} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} />
+              ) : (
+                <p className="muted small">Data komponen tidak tersedia (dataset Site A tidak mencatat komponen).</p>
+              )}
             </ChartCard>
-
-            <ChartCard
-              title="Biaya maintenance per unit"
-              subtitle="Diurutkan dari biaya tertinggi"
-              rows={results.cost}
-              columns={[
-                { label: 'Unit', render: (r) => r.name },
-                { label: 'Biaya', numeric: true, render: (r) => formatRupiah(r.value) },
-              ]}
-            >
-              <HorizontalBarChart
-                data={results.cost}
-                formatValue={formatRupiahCompact}
-                formatTick={costTick}
-              />
-            </ChartCard>
-            <ChartCard
-              title="Downtime per tipe maintenance"
-              subtitle="Total jam downtime"
-              rows={results.byType}
-              columns={[
-                { label: 'Tipe', render: (r) => r.name },
-                { label: 'Downtime', numeric: true, render: (r) => hoursValue(r.value) },
-              ]}
-            >
-              <HorizontalBarChart data={results.byType} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} />
-            </ChartCard>
-
           </div>
+
+          <p className="muted small">
+            Periode {formatDateMs(r.from)} – {formatDateMs(r.to - DAY)} · {units.length} unit · {formatNumber(r.kpi.woCount)} WO ·{' '}
+            {formatNumber(r.kpi.operatingHours)} jam operasi (dari hour meter)
+          </p>
         </>
+      )}
+
+      {drill && (
+        <Modal title={`${drill.rowName} · ${drill.bucket.label}`} onClose={() => setDrill(null)} width="min(1000px, 100%)">
+          <p className="muted small">{drill.items.length} WO menyebabkan downtime di sel ini.</p>
+          <WorkOrderTable workOrders={drill.items} />
+        </Modal>
       )}
     </div>
   );

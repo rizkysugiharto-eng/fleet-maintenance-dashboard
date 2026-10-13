@@ -1,46 +1,68 @@
 import { describe, expect, it } from 'vitest';
-import {
-  breakdownByComponent,
-  calcKpi,
-  listMonths,
-  monthStart,
-  monthlyPa,
-  parseTime,
-} from './kpi.js';
+import { breakdownTrend, componentPareto, delayAnalysis, downtimeHeatmap } from './analytics.js';
+import { buildBuckets, buildHmIndex, calcKpi, hmAt, periodFromDates, toMs } from './kpi.js';
+import { agingSummary, backlogItems, pmCompliance, pmForecast } from './planning.js';
 
-const unit = { code: 'EX-001', type: 'Excavator', brand: 'Komatsu', model: 'PC2000-8' };
+const unit = { code: 'EX-001', siteId: 'A', type: 'Excavator', pmInterval: 250, ewh: 10 };
 // Periode 10 hari = 240 jam kalender untuk 1 unit
-const from = parseTime('2025-01-01T00:00');
-const to = parseTime('2025-01-11T00:00');
+const { from, to } = periodFromDates('2025-01-01', '2025-01-10');
 
 function wo(overrides) {
   return {
     id: 'WO-TEST',
+    siteId: 'A',
     unitCode: 'EX-001',
     type: 'BM',
-    component: 'Engine',
-    description: 'Test',
+    status: 'Completed',
     start: '2025-01-02T00:00',
     end: '2025-01-02T10:00',
-    status: 'Closed',
+    component: 'Engine',
+    problem: 'Overheat',
+    delayReason: null,
+    delayHours: 0,
     cost: 1000,
     ...overrides,
   };
 }
 
+// HM naik 10 jam per hari, mulai 1000 di akhir 1 Jan
+const hmLogs = Array.from({ length: 10 }, (_, i) => ({
+  unitCode: 'EX-001',
+  date: `2025-01-${String(i + 1).padStart(2, '0')}`,
+  hm: 1000 + i * 10,
+}));
+const hmIndex = buildHmIndex(hmLogs);
+
+describe('waktu & hour meter', () => {
+  it('tanggal tanpa jam dibaca sebagai tengah malam waktu lokal', () => {
+    expect(new Date(toMs('2025-03-01')).getHours()).toBe(0);
+    expect(to - from).toBe(240 * 3600 * 1000);
+  });
+
+  it('HM diinterpolasi di antara dua pembacaan', () => {
+    const series = hmIndex.get('EX-001');
+    expect(hmAt(series, toMs('2025-01-03'))).toBe(1010); // akhir 2 Jan
+    expect(hmAt(series, toMs('2025-01-03T12:00'))).toBe(1015);
+  });
+});
+
 describe('calcKpi', () => {
-  it('menghitung PA, MTBF, dan MTTR dasar', () => {
+  it('menghitung PA, MA, UA, MTBF, dan MTTR', () => {
     const workOrders = [
       wo({ id: 'A' }), // BM 10 jam
       wo({ id: 'B', type: 'PM', start: '2025-01-05T00:00', end: '2025-01-05T05:00' }), // PM 5 jam
     ];
-    const kpi = calcKpi({ units: [unit], workOrders, from, to });
-    expect(kpi.calendarHours).toBe(240);
+    const kpi = calcKpi({ units: [unit], workOrders, hmIndex, from, to });
+    expect(kpi.totalHours).toBe(240);
     expect(kpi.downtimeHours).toBe(15);
+    expect(kpi.unscheduledDowntime).toBe(10);
+    expect(kpi.scheduledDowntime).toBe(5);
+    expect(kpi.operatingHours).toBe(100); // 10 hari × 10 jam
     expect(kpi.pa).toBeCloseTo((225 / 240) * 100);
-    expect(kpi.mtbf).toBe(225); // 225 jam operasi / 1 breakdown
+    expect(kpi.ma).toBeCloseTo((100 / 115) * 100);
+    expect(kpi.ua).toBeCloseTo((100 / 225) * 100);
+    expect(kpi.mtbf).toBe(100); // 100 jam operasi / 1 breakdown
     expect(kpi.mttr).toBe(10);
-    expect(kpi.woCount).toBe(2);
     expect(kpi.cost).toBe(2000);
   });
 
@@ -49,54 +71,93 @@ describe('calcKpi', () => {
       wo({ id: 'A', start: '2025-01-02T00:00', end: '2025-01-02T10:00' }),
       wo({ id: 'B', type: 'PM', start: '2025-01-02T05:00', end: '2025-01-02T12:00' }),
     ];
-    const kpi = calcKpi({ units: [unit], workOrders, from, to });
-    expect(kpi.downtimeHours).toBe(12);
+    expect(calcKpi({ units: [unit], workOrders, hmIndex, from, to }).downtimeHours).toBe(12);
   });
 
-  it('WO Open dihitung down sampai akhir periode dan masuk backlog', () => {
-    const workOrders = [wo({ start: '2025-01-10T00:00', end: null, status: 'Open' })];
-    const kpi = calcKpi({ units: [unit], workOrders, from, to });
+  it('WO yang belum selesai dihitung down sampai akhir periode dan masuk backlog', () => {
+    const workOrders = [wo({ start: '2025-01-10T00:00', end: null, status: 'Waiting Part' })];
+    const kpi = calcKpi({ units: [unit], workOrders, hmIndex, from, to });
     expect(kpi.downtimeHours).toBe(24);
     expect(kpi.backlog).toBe(1);
-    expect(kpi.mttr).toBeNull(); // belum ada BM yang selesai
+    expect(kpi.mttr).toBeNull();
   });
 
-  it('memotong WO yang melewati batas periode', () => {
-    const workOrders = [wo({ start: '2024-12-31T20:00', end: '2025-01-01T04:00' })];
-    const kpi = calcKpi({ units: [unit], workOrders, from, to });
-    expect(kpi.downtimeHours).toBe(4);
-    expect(kpi.woCount).toBe(0); // WO dimulai sebelum periode
+  it('BAC (accident) termasuk breakdown tak terjadwal', () => {
+    const kpi = calcKpi({ units: [unit], workOrders: [wo({ type: 'BAC' })], hmIndex, from, to });
+    expect(kpi.breakdownCount).toBe(1);
   });
 
-  it('mengembalikan null bila tidak ada unit atau breakdown', () => {
-    const kpi = calcKpi({ units: [], workOrders: [], from, to });
+  it('mengembalikan null bila tidak ada unit', () => {
+    const kpi = calcKpi({ units: [], workOrders: [], hmIndex, from, to });
     expect(kpi.pa).toBeNull();
     expect(kpi.mtbf).toBeNull();
   });
 });
 
-describe('ringkasan', () => {
-  it('listMonths melewati pergantian tahun', () => {
-    expect(listMonths('2024-11', '2025-02')).toEqual(['2024-11', '2024-12', '2025-01', '2025-02']);
+describe('analytics', () => {
+  it('bucket mingguan dan tren breakdown', () => {
+    const buckets = buildBuckets(from, to, 'week');
+    expect(buckets).toHaveLength(2);
+    const trend = breakdownTrend({ units: [unit], workOrders: [wo(), wo({ type: 'PM', start: '2025-01-09T00:00', end: '2025-01-09T02:00' })], buckets });
+    expect(trend[0]).toMatchObject({ unscheduled: 1, scheduled: 0 });
+    expect(trend[1]).toMatchObject({ unscheduled: 0, scheduled: 1 });
   });
 
-  it('monthlyPa memberi satu baris per bulan', () => {
-    const rows = monthlyPa({ units: [unit], workOrders: [wo()], fromMonth: '2025-01', toMonth: '2025-02' });
-    expect(rows.map((r) => r.name)).toEqual(['2025-01', '2025-02']);
-    expect(rows[1].value).toBe(100);
-    expect(monthStart('2025-02')).toBe(parseTime('2025-02-01T00:00'));
-  });
-
-  it('pareto komponen hanya dari BM dan urut terbesar', () => {
+  it('pareto komponen hanya dari breakdown tak terjadwal', () => {
     const workOrders = [
-      wo({ id: 'A', component: 'Engine' }), // 10 jam
-      wo({ id: 'B', component: 'Hydraulic', start: '2025-01-03T00:00', end: '2025-01-03T20:00' }), // 20 jam
+      wo({ id: 'A', component: 'Engine' }),
+      wo({ id: 'B', component: 'Hydraulic', start: '2025-01-03T00:00', end: '2025-01-03T20:00' }),
       wo({ id: 'C', type: 'PM', component: 'PM Service', start: '2025-01-04T00:00', end: '2025-01-04T08:00' }),
     ];
-    const rows = breakdownByComponent({ units: [unit], workOrders, from, to });
-    expect(rows).toEqual([
-      { name: 'Hydraulic', value: 20 },
-      { name: 'Engine', value: 10 },
+    const rows = componentPareto({ units: [unit], workOrders, from, to });
+    expect(rows.map((r) => [r.name, r.value])).toEqual([
+      ['Hydraulic', 20],
+      ['Engine', 10],
     ]);
+  });
+
+  it('analisis delay menjumlahkan jam dan frekuensi', () => {
+    const workOrders = [
+      wo({ id: 'A', delayReason: 'Menunggu part', delayHours: 6 }),
+      wo({ id: 'B', delayReason: 'Menunggu part', delayHours: 4 }),
+      wo({ id: 'C', delayReason: 'Menunggu mekanik', delayHours: 1 }),
+    ];
+    expect(delayAnalysis({ units: [unit], workOrders, from, to })[0]).toMatchObject({ name: 'Menunggu part', value: 10, count: 2 });
+  });
+
+  it('heatmap menghitung rata-rata jam down per unit di tiap sel', () => {
+    const buckets = buildBuckets(from, to, 'week');
+    const { rows } = downtimeHeatmap({ units: [unit], workOrders: [wo()], buckets });
+    expect(rows[0].cells).toEqual([10, 0]);
+  });
+});
+
+describe('planning', () => {
+  it('forecast PM memakai HM jadwal terakhir + interval', () => {
+    const pmLogs = [{ unitCode: 'EX-001', pmType: 'PM250', hmPlan: 1000, hmActual: 1005 }];
+    const [row] = pmForecast({ units: [unit], pmLogs, hmIndex, refTime: to });
+    expect(row.due).toBe(1250);
+    expect(row.remaining).toBe(1250 - 1090);
+    expect(row.days).toBeCloseTo(16);
+    expect(row.status).toBe('Terjadwal');
+  });
+
+  it('compliance PM dengan toleransi ±10% interval', () => {
+    const pmLogs = [
+      { unitCode: 'EX-001', pmType: 'PM250', hmPlan: 1000, hmActual: 1020 },
+      { unitCode: 'EX-001', pmType: 'PM500', hmPlan: 1250, hmActual: 1290 },
+    ];
+    const result = pmCompliance({ units: [unit], pmLogs });
+    expect(result.compliance).toBe(50);
+    expect(result.rows[1].inTolerance).toBe(false);
+  });
+
+  it('aging backlog dikelompokkan per rentang hari', () => {
+    const items = backlogItems(
+      [wo({ status: 'Open', start: '2025-01-09T00:00' }), wo({ status: 'Open', start: '2024-09-01T00:00' }), wo()],
+      to,
+    );
+    expect(items).toHaveLength(2);
+    expect(agingSummary(items).map((b) => b.value)).toEqual([1, 0, 0, 1]);
   });
 });
