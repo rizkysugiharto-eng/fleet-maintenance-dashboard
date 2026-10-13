@@ -6,6 +6,7 @@ import { LevelBadge } from '../components/Badges.jsx';
 import { useData } from '../context/DataContext.jsx';
 import { SUPABASE_URL } from '../lib/database.js';
 import { formatNumber, formatPercent } from '../lib/format.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const REPO = 'https://github.com/rizkysugiharto-eng/fleet-maintenance-dashboard/blob/main';
 
@@ -43,22 +44,17 @@ export default function DatabasePage() {
 
   const statusBadge = {
     checking: <LevelBadge level="neutral">Menghubungkan…</LevelBadge>,
-    ready: source.mode === 'database' ? <LevelBadge level="good">Terhubung</LevelBadge> : <LevelBadge level="warning">Mode demo lokal</LevelBadge>,
+    ready: source.mode === 'database' ? <LevelBadge level="good">Terhubung</LevelBadge> : <LevelBadge level="warning">Mode demo</LevelBadge>,
     empty: <LevelBadge level="warning">Terhubung, database kosong</LevelBadge>,
     error: <LevelBadge level="critical">Gagal terhubung</LevelBadge>,
   }[source.status];
 
   return (
     <div className="page" style={{ maxWidth: 1100 }}>
-      <div className="page-title">
-        <div>
-          <h1>Database &amp; Login</h1>
-          <p className="muted">
-            Mode <b>Database</b>: data bersama di Supabase — semua orang bisa melihat, hanya akun login yang bisa mengubah. Mode{' '}
-            <b>Demo lokal</b>: data contoh di browser Anda sendiri, bebas dicoba.
-          </p>
-        </div>
-      </div>
+      <PageHeader step="settings" title="Database & Login">
+        <b>Database</b>: data bersama di Supabase — semua orang bisa melihat, hanya akun yang login yang bisa mengubah. <b>Mode demo</b>: data
+        contoh yang tersimpan di browser Anda sendiri, bebas dicoba.
+      </PageHeader>
 
       <div className="grid-2">
         <section className="card card-pad">
@@ -71,7 +67,7 @@ export default function DatabasePage() {
           </header>
           {source.message && <p className="alert alert-info">{source.message}</p>}
           <p className="muted small" style={{ margin: '10px 0' }}>
-            Sedang dipakai: <b>{source.mode === 'database' ? 'Database Supabase' : 'Demo lokal (browser ini)'}</b> · {data.units.length} unit ·{' '}
+            Sedang dipakai: <b>{source.mode === 'database' ? 'Database Supabase' : 'Mode demo (browser ini)'}</b> · {data.units.length} unit ·{' '}
             {formatNumber(data.workOrders.length)} WO · {formatNumber(data.hmLogs.length)} log HM
           </p>
           <div className="form-actions" style={{ flexWrap: 'wrap' }}>
@@ -79,7 +75,7 @@ export default function DatabasePage() {
               {source.mode === 'database' ? 'Muat ulang dari database' : 'Gunakan database'}
             </button>
             <button type="button" className="btn-ghost" onClick={() => switchSource('local')} disabled={source.mode === 'local' && source.status === 'ready'}>
-              Gunakan demo lokal
+              Gunakan mode demo
             </button>
           </div>
         </section>

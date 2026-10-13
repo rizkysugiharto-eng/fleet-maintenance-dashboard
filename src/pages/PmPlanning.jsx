@@ -7,6 +7,7 @@ import { useData } from '../context/DataContext.jsx';
 import { formatDateMs, formatNumber, formatPercent } from '../lib/format.js';
 import { DAY } from '../lib/kpi.js';
 import { PM_STATUS_LEVEL, PM_TOLERANCE, pmCompletionRate, pmCompliance, pmForecast } from '../lib/planning.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function PmPlanning() {
   const { units, workOrders, data, hmIndex, refTime, openUnit } = useData();
@@ -21,15 +22,10 @@ export default function PmPlanning() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Perencanaan PM</h1>
-          <p className="muted">
-            Jadwal PM dihitung dari HM: HM jatuh tempo = HM jadwal PM terakhir + interval. Estimasi hari = sisa HM ÷ rata-rata HM per hari.
-            Data s.d. {formatDateMs(refTime - DAY)}.
-          </p>
-        </div>
-      </div>
+      <PageHeader step={3} title="Perencanaan PM">
+        Kapan setiap unit perlu servis berikutnya. HM jatuh tempo = HM jadwal PM terakhir + interval; estimasi hari = sisa HM ÷ rata-rata
+        HM per hari (data s.d. {formatDateMs(refTime - DAY)}).
+      </PageHeader>
 
       <div className="kpi-grid">
         <div className="card kpi-card">

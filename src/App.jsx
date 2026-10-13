@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Backlog from './pages/Backlog.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import Home from './pages/Home.jsx';
 import DatabasePage from './pages/DatabasePage.jsx';
 import EquipmentHealth from './pages/EquipmentHealth.jsx';
 import HourMeter from './pages/HourMeter.jsx';
@@ -17,7 +18,8 @@ export default function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/health" element={<EquipmentHealth />} />
         <Route path="/work-orders" element={<WorkOrders />} />
         <Route path="/input" element={<InputWorkOrder />} />

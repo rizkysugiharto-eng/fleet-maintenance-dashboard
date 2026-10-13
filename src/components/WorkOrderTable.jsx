@@ -1,4 +1,4 @@
-// Tabel daftar work order ringkas (dipakai di drilldown heatmap & Unit 360).
+// Tabel daftar work order ringkas (dipakai di drilldown heatmap & detail unit).
 
 import { useData } from '../context/DataContext.jsx';
 import { formatDateTimeText, formatNumber, formatRupiahCompact } from '../lib/format.js';

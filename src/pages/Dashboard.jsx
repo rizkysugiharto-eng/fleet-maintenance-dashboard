@@ -3,6 +3,7 @@
 // (seperti slicer di Power BI).
 
 import { useMemo, useState } from 'react';
+import { LevelBadge } from '../components/Badges.jsx';
 import ChartCard, { Legend } from '../components/ChartCard.jsx';
 import { HorizontalBarChart, TrendLineChart } from '../components/Charts.jsx';
 import Heatmap from '../components/Heatmap.jsx';
@@ -28,6 +29,7 @@ import { formatDateMs, formatHours, formatNumber, formatPercent, formatRupiahCom
 import { DAY, TARGETS, buildBuckets, calcKpi, kpiSeries, periodFromDates } from '../lib/kpi.js';
 import { formatDate } from '../data/simulate.js';
 import { useChartColors } from '../lib/useChartColors.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const percentTick = (v) => `${v}%`;
 const hoursValue = (v) => `${formatNumber(v)} jam`;
@@ -89,12 +91,10 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Fleet Reliability &amp; Performance</h1>
-          <p className="muted">KPI armada dihitung otomatis dari work order dan hour meter. Klik grafik atau kode unit untuk detail.</p>
-        </div>
-      </div>
+      <PageHeader step={3} title="Dashboard KPI">
+        Semua angka dihitung otomatis dari work order dan hour meter. Warna merah menandai masalah terbesar. Klik batang, sel heatmap,
+        atau kode unit untuk melihat detailnya.
+      </PageHeader>
 
       <div className="card filters" role="group" aria-label="Filter dashboard">
         <label>
@@ -142,8 +142,8 @@ export default function Dashboard() {
           <div className="kpi-grid">
             <KpiCard
               kpiKey="breakdownCount"
-              label="B/D EVENTS"
-              description="Jumlah unit rusak mendadak (tak terjadwal)"
+              label="B/D events"
+              description="Jumlah kejadian unit rusak mendadak (tak terjadwal)"
               value={r.kpi.breakdownCount}
               display={formatNumber(r.kpi.breakdownCount)}
               note={`${formatNumber(r.kpi.unscheduledDowntime)} jam down`}
@@ -170,8 +170,8 @@ export default function Dashboard() {
             />
             <KpiCard
               kpiKey="pa"
-              label="PA · Physical Availability"
-              description="% waktu unit siap pakai (tidak sedang diperbaiki)"
+              label="PA"
+              description="Physical Availability — % waktu unit siap pakai"
               value={r.kpi.pa}
               display={formatPercent(r.kpi.pa)}
               series={r.spark}
@@ -179,8 +179,8 @@ export default function Dashboard() {
             />
             <KpiCard
               kpiKey="ma"
-              label="MA · Mechanical Availability"
-              description="Jam kerja dibanding jam kerja + jam perbaikan"
+              label="MA"
+              description="Mechanical Availability — jam kerja dibanding jam kerja + perbaikan"
               value={r.kpi.ma}
               display={formatPercent(r.kpi.ma)}
               series={r.spark}
@@ -188,8 +188,8 @@ export default function Dashboard() {
             />
             <KpiCard
               kpiKey="ua"
-              label="UA · Use of Availability"
-              description="% waktu siap pakai yang benar-benar dipakai bekerja"
+              label="UA"
+              description="Use of Availability — % waktu siap pakai yang dipakai bekerja"
               value={r.kpi.ua}
               display={formatPercent(r.kpi.ua)}
               series={r.spark}
@@ -219,8 +219,8 @@ export default function Dashboard() {
               <TrendLineChart
                 data={r.trend}
                 series={[
-                  { key: 'unscheduled', name: 'Tak terjadwal', color: colors.series1 },
-                  { key: 'scheduled', name: 'Terjadwal', color: colors.series2 },
+                  { key: 'unscheduled', name: 'Tak terjadwal', short: 'Tak terjadwal', color: colors.series1 },
+                  { key: 'scheduled', name: 'Terjadwal', short: 'Terjadwal', color: colors.series2 },
                 ]}
                 formatValue={(v) => `${formatNumber(v)} WO`}
                 formatTick={(v) => formatNumber(v)}
@@ -243,7 +243,7 @@ export default function Dashboard() {
                       <div className="status-track">
                         <div className="status-fill" style={{ width: `${(row.value / max) * 100}%`, background: colors[STATUS_COLOR_KEY[name]] }} />
                       </div>
-                      <span className="num mono">{formatNumber(row.value)}</span>
+                      <span className="num">{formatNumber(row.value)}</span>
                     </div>
                   );
                 })}
@@ -270,7 +270,7 @@ export default function Dashboard() {
                       <span className="legend-swatch" style={{ background: color, height: 10 }} />
                       {label}
                     </span>
-                    <span className="mono">
+                    <span className="num">
                       {formatNumber(value)} jam · {formatPercent(r.split.total ? (value / r.split.total) * 100 : null)}
                     </span>
                   </div>
@@ -297,6 +297,7 @@ export default function Dashboard() {
                   formatValue={(v, row) => `${formatNumber(v)} jam${row ? ` · ${row.count}×` : ''}`}
                   formatTick={(v) => formatNumber(v)}
                   labelWidth={124}
+                  highlight="max"
                 />
               ) : (
                 <p className="muted small">Data delay tidak tersedia (dataset Site A tidak mencatat alasan delay).</p>
@@ -313,7 +314,7 @@ export default function Dashboard() {
                 { label: 'Jumlah WO', numeric: true, render: (x) => x.count },
               ]}
             >
-              <HorizontalBarChart data={r.byType} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} labelWidth={44} />
+              <HorizontalBarChart data={r.byType} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} labelWidth={44} highlight="max" />
               <p className="muted small">PM = servis berkala · CM = perbaikan terencana · BM = rusak mendadak · BAC = rusak karena insiden</p>
             </ChartCard>
           </div>
@@ -332,7 +333,7 @@ export default function Dashboard() {
             />
           </ChartCard>
 
-          <ChartCard title="Ringkasan per tipe unit" subtitle="Diurutkan dari downtime terbesar">
+          <ChartCard title="Ringkasan per tipe unit" subtitle={`Diurutkan dari downtime terbesar · ✓ / ✕ = PA sesuai / di bawah target ${TARGETS.pa.value}%`}>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -350,18 +351,27 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {r.types.map((t) => (
+                  {r.types.map((t, i) => (
                     <tr key={t.name}>
                       <td>
                         <button type="button" className="link-button" onClick={() => setFilter('unitType', t.name)}>
                           {t.name}
                         </button>
+                        {i === 0 && r.types.length > 1 && (
+                          <>
+                            {' '}
+                            <LevelBadge level="critical">Downtime tertinggi</LevelBadge>
+                          </>
+                        )}
                       </td>
                       <td className="num">{t.unitCount}</td>
                       <td className="num">{formatNumber(t.breakdownCount)}</td>
                       <td className="num">{formatNumber(t.operatingHours)}</td>
                       <td className="num">{formatNumber(t.downtimeHours)}</td>
-                      <td className={`num ${t.pa >= TARGETS.pa.value ? 'status-good' : 'status-critical'}`}>{formatPercent(t.pa)}</td>
+                      <td className={`num nowrap ${t.pa >= TARGETS.pa.value ? 'status-good' : 'status-critical'}`}>
+                        <span aria-hidden="true">{t.pa >= TARGETS.pa.value ? '✓ ' : '✕ '}</span>
+                        {formatPercent(t.pa)}
+                      </td>
                       <td className="num">{formatPercent(t.ma)}</td>
                       <td className="num">{formatPercent(t.ua)}</td>
                       <td className="num">{formatHours(t.mtbf)}</td>
@@ -376,7 +386,7 @@ export default function Dashboard() {
           <div className="grid-2">
             <ChartCard
               title="PA terendah per unit"
-              subtitle={`12 unit dengan PA terendah · target ${TARGETS.pa.value}% · klik batang untuk Unit 360`}
+              subtitle={`12 unit dengan PA terendah · target ${TARGETS.pa.value}% · klik batang untuk detail unit`}
               rows={r.paUnits}
               columns={[
                 { label: 'Unit', render: (x) => x.name },
@@ -392,6 +402,7 @@ export default function Dashboard() {
                 targetLabel={`Target ${TARGETS.pa.value}%`}
                 labelWidth={64}
                 onSelect={openUnit}
+                highlight="min"
               />
             </ChartCard>
 
@@ -406,7 +417,7 @@ export default function Dashboard() {
               ]}
             >
               {r.pareto.length ? (
-                <HorizontalBarChart data={r.pareto} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} />
+                <HorizontalBarChart data={r.pareto} formatValue={hoursValue} formatTick={(v) => formatNumber(v)} highlight="max" />
               ) : (
                 <p className="muted small">Data komponen tidak tersedia (dataset Site A tidak mencatat komponen).</p>
               )}

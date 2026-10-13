@@ -8,6 +8,7 @@ import { DELAY_REASONS, STATUSES, WO_TYPES } from '../data/catalog.js';
 import { formatDateTimeText, formatNumber, formatRupiah } from '../lib/format.js';
 import { downloadCsv } from '../lib/csv.js';
 import { toMs } from '../lib/kpi.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const PAGE_SIZE = 50;
 const CSV_COLUMNS = ['id', 'siteId', 'unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost', 'source'];
@@ -74,17 +75,18 @@ export default function WorkOrders() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Laporan Work Order</h1>
-          <p className="muted">
-            {formatNumber(rows.length)} dari {formatNumber(workOrders.length)} work order · terbaru di atas
-          </p>
-        </div>
-        <button type="button" className="btn-ghost" onClick={() => downloadCsv('work-orders.csv', rows, CSV_COLUMNS)}>
-          Export CSV ({formatNumber(rows.length)})
-        </button>
-      </div>
+      <PageHeader
+        step={2}
+        title="Laporan Work Order"
+        actions={
+          <button type="button" className="btn-ghost" onClick={() => downloadCsv('work-orders.csv', rows, CSV_COLUMNS)}>
+            Export CSV ({formatNumber(rows.length)})
+          </button>
+        }
+      >
+        Semua pekerjaan maintenance yang tercatat ({formatNumber(rows.length)} dari {formatNumber(workOrders.length)} sesuai filter, terbaru di
+        atas). Ubah status atau tutup WO yang sudah selesai di sini.
+      </PageHeader>
 
       {error && (
         <p className="alert" role="alert">

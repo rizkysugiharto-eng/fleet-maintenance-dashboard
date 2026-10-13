@@ -1,4 +1,4 @@
-// Panel "Unit 360": semua informasi satu unit dalam satu tempat —
+// Panel "Detail unit": semua informasi satu unit dalam satu tempat —
 // ringkasan, riwayat WO, hour meter, dan tren KPI bulanan.
 
 import { useMemo, useState } from 'react';
@@ -54,7 +54,7 @@ export default function Unit360() {
   const f = s.forecast;
 
   return (
-    <Modal title={`Unit 360 · ${unit.code}`} onClose={() => openUnit(null)}>
+    <Modal title={`Detail unit ${unit.code}`} onClose={() => openUnit(null)}>
       <p className="muted">
         {unit.type} · {[unit.brand, unit.model].filter(Boolean).join(' ') || 'Model tidak tercatat'} · Site {unit.siteId}
       </p>
@@ -64,7 +64,7 @@ export default function Unit360() {
             {t}
           </button>
         ))}
-        <label className="field" style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
+        <label className="field">
           Periode
           <select value={period} onChange={(e) => setPeriod(e.target.value)}>
             <option value="30">30 hari</option>

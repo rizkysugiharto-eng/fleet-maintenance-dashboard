@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext.jsx';
 import { COMPONENTS, DELAY_REASONS, PM_COMPONENT, STATUSES, WO_TYPES } from '../data/catalog.js';
 import { normalizeWorkOrder, validateWorkOrder } from '../lib/validation.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const EMPTY_FORM = {
   unitCode: '',
@@ -77,14 +78,9 @@ export default function InputWorkOrder() {
 
   return (
     <div className="page" style={{ maxWidth: 820 }}>
-      <div className="page-title">
-        <div>
-          <h1>Input Work Order</h1>
-          <p className="muted">
-            Catat setiap pekerjaan maintenance. Kosongkan waktu selesai bila unit masih dikerjakan — WO masuk <b>backlog</b>.
-          </p>
-        </div>
-      </div>
+      <PageHeader step={1} title="Input Work Order">
+        Catat setiap pekerjaan maintenance. Kosongkan waktu selesai bila unit masih dikerjakan — WO otomatis masuk <b>backlog</b>.
+      </PageHeader>
 
       {!canWrite && (
         <p className="alert alert-info">
