@@ -143,7 +143,7 @@ export function unitSummary({ unit, workOrders, pmLogs, hmIndex, from, to, refTi
     forecast,
     kpi,
     topComponents: [...componentCount].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6),
-    history: [...wos].sort((a, b) => b.start.localeCompare(a.start)),
+    history: [...inPeriod].sort((a, b) => b.start.localeCompare(a.start)),
     durationOf: (wo) => (wo.end ? hoursBetween(toMs(wo.start), toMs(wo.end)) : null),
   };
 }

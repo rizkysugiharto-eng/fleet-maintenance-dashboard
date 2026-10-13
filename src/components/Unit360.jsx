@@ -1,5 +1,5 @@
 // Panel "Detail unit": semua informasi satu unit dalam satu tempat —
-// ringkasan, riwayat WO, hour meter, dan tren KPI bulanan.
+// ringkasan, riwayat WO, hour meter, dan tren KPI, semuanya mengikuti pilihan periode.
 
 import { useMemo, useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
@@ -13,7 +13,7 @@ import { TrendLineChart } from './Charts.jsx';
 import Modal from './Modal.jsx';
 import WorkOrderTable from './WorkOrderTable.jsx';
 
-const TABS = ['Ringkasan', 'Riwayat WO', 'Hour Meter', 'KPI Bulanan'];
+const TABS = ['Ringkasan', 'Riwayat WO', 'Hour Meter', 'Tren KPI'];
 
 function Stat({ label, value, note }) {
   return (
@@ -32,22 +32,30 @@ export default function Unit360() {
   const [tab, setTab] = useState(TABS[0]);
   const [period, setPeriod] = useState('365');
 
-  const from = period === 'all' ? toMs('2000-01-01') : refTime - Number(period) * DAY;
+  const hmPoints = useMemo(() => (unit ? (hmIndex.get(unit.code) ?? []).slice(1) : []), [unit, hmIndex]);
+  // "Semua" dimulai dari pembacaan HM pertama unit ini, bukan dari tahun 2000
+  const dataStart = hmPoints.length ? hmPoints[0].t - DAY : refTime - 365 * DAY;
+  const from = period === 'all' ? Math.min(dataStart, refTime - 30 * DAY) : refTime - Number(period) * DAY;
+  // Periode pendek ditampilkan per hari / per minggu, periode panjang per minggu / per bulan
+  const short = period === '30' || period === '90';
+
   const summary = useMemo(
     () => unit && unitSummary({ unit, workOrders: data.workOrders, pmLogs: data.pmLogs, hmIndex, from, to: refTime, refTime }),
     [unit, data.workOrders, data.pmLogs, hmIndex, from, refTime],
   );
 
-  const monthly = useMemo(() => {
-    if (!unit || tab !== 'KPI Bulanan') return [];
-    const buckets = buildBuckets(refTime - 365 * DAY, refTime, 'month');
+  const kpiTrend = useMemo(() => {
+    if (!unit || tab !== 'Tren KPI') return [];
+    const buckets = buildBuckets(from, refTime, short ? 'week' : 'month');
     return kpiSeries({ units: [unit], workOrders: data.workOrders, hmIndex, buckets }).map((r) => ({ ...r, name: r.label }));
-  }, [unit, tab, data.workOrders, hmIndex, refTime]);
+  }, [unit, tab, data.workOrders, hmIndex, from, refTime, short]);
 
   const hmSeries = useMemo(() => {
-    if (!unit || tab !== 'Hour Meter') return [];
-    return (hmIndex.get(unit.code) ?? []).slice(1).filter((_, i, arr) => i % 7 === 0 || i === arr.length - 1).map((p) => ({ name: formatDateMs(p.t - DAY), hm: p.hm }));
-  }, [unit, tab, hmIndex]);
+    if (tab !== 'Hour Meter') return [];
+    const points = hmPoints.filter((p) => p.t - DAY >= from);
+    const step = short ? 1 : 7;
+    return points.filter((_, i, arr) => i % step === 0 || i === arr.length - 1).map((p) => ({ name: formatDateMs(p.t - DAY), hm: p.hm }));
+  }, [tab, hmPoints, from, short]);
 
   if (!unit) return null;
   const s = summary;
@@ -137,7 +145,7 @@ export default function Unit360() {
       {tab === 'Riwayat WO' && (
         <>
           <p className="muted small">
-            {s.history.length} WO tercatat. Jenis: {Object.keys(WO_TYPES).join(', ')}.
+            {s.history.length} WO dalam periode ini. Jenis: {Object.keys(WO_TYPES).join(', ')}.
           </p>
           <WorkOrderTable workOrders={s.history} showUnit={false} limit={100} />
         </>
@@ -145,7 +153,9 @@ export default function Unit360() {
 
       {tab === 'Hour Meter' && (
         <>
-          <p className="muted small">HM per minggu. Kemiringan garis = jam kerja unit; garis datar = unit tidak beroperasi.</p>
+          <p className="muted small">
+            HM per {short ? 'hari' : 'minggu'}. Kemiringan garis = jam kerja unit; garis datar = unit tidak beroperasi.
+          </p>
           <TrendLineChart
             data={hmSeries}
             series={[{ key: 'hm', name: 'HM', color: colors.series1 }]}
@@ -157,11 +167,11 @@ export default function Unit360() {
         </>
       )}
 
-      {tab === 'KPI Bulanan' && (
+      {tab === 'Tren KPI' && (
         <>
-          <p className="muted small">PA dan MA per bulan, 12 bulan terakhir.</p>
+          <p className="muted small">PA dan MA per {short ? 'minggu' : 'bulan'} dalam periode yang dipilih.</p>
           <TrendLineChart
-            data={monthly}
+            data={kpiTrend}
             series={[
               { key: 'pa', name: 'PA', color: colors.series1 },
               { key: 'ma', name: 'MA', color: colors.series2 },
