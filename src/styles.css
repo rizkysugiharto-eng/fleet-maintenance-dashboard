@@ -1,0 +1,485 @@
+/* ===== Warna (design tokens) =====
+   Semua warna didefinisikan sekali di sini, lalu dipakai lewat var(--nama).
+   Mode gelap otomatis mengikuti pengaturan perangkat. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6;
+  --accent: #2a78d6;
+  --accent-text: #ffffff;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --critical: #d03b3b;
+  --input-bg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+    --accent: #3987e5;
+    --good-text: #0ca30c;
+    --critical: #e66767;
+    --input-bg: #232322;
+  }
+}
+
+/* ===== Dasar ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  margin-top: 16px;
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* ===== Header & navigasi ===== */
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 12px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.brand-mark {
+  color: var(--accent);
+  font-size: 1.25rem;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.app-header nav a {
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.app-header nav a:hover {
+  background: var(--grid);
+}
+
+.app-header nav a.active {
+  color: var(--text-primary);
+  background: var(--grid);
+  font-weight: 600;
+}
+
+.role-switch {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.app-footer {
+  text-align: center;
+  font-size: 0.8125rem;
+  padding: 0 16px 32px;
+}
+
+/* ===== Form & tombol ===== */
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 7px 10px;
+  min-height: 38px;
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: var(--critical);
+}
+
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--axis);
+}
+
+.btn-ghost:hover {
+  background: var(--grid);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--critical);
+  border-color: var(--critical);
+  font-weight: 600;
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+  min-height: 0;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 20px;
+  max-width: 760px;
+}
+
+.form label,
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.field-error {
+  color: var(--critical);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.alert {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--critical);
+  color: var(--text-primary);
+}
+
+.alert-good {
+  border-color: var(--good);
+}
+
+/* ===== Filter (satu baris di atas konten) ===== */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.filters-action {
+  margin-left: auto;
+}
+
+/* ===== KPI ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.kpi-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.kpi-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.kpi-value {
+  font-size: 1.625rem;
+  font-weight: 600;
+}
+
+.kpi-hero .kpi-value {
+  font-size: 3rem;
+  line-height: 1.1;
+}
+
+.kpi-note {
+  font-size: 0.8125rem;
+}
+
+.status {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.status-good {
+  color: var(--good-text);
+}
+
+.status-critical {
+  color: var(--critical);
+}
+
+/* ===== Grafik ===== */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.chart-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-header button {
+  white-space: nowrap;
+}
+
+.card-header .muted {
+  font-size: 0.8125rem;
+}
+
+.chart-tooltip {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-size: 0.8125rem;
+}
+
+.chart-tooltip span {
+  color: var(--text-secondary);
+}
+
+/* ===== Tabel ===== */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: middle;
+}
+
+th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 24px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.badge-open {
+  color: var(--critical);
+}
+
+.badge-closed {
+  color: var(--text-secondary);
+}
+
+.close-wo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.close-wo input {
+  min-height: 0;
+  padding: 3px 6px;
+  font-size: 0.8125rem;
+}
+
+.show-more {
+  align-self: center;
+}
+
+.danger-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.danger-zone p {
+  margin: 0;
+}
+
+/* ===== Layar kecil (HP) ===== */
+@media (max-width: 760px) {
+  .chart-grid,
+  .form {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+
+  .role-switch {
+    margin-left: 0;
+  }
+
+  .filters label {
+    flex: 1 1 140px;
+  }
+
+  .filters-action {
+    margin-left: 0;
+  }
+}
