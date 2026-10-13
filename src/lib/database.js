@@ -99,7 +99,16 @@ async function fetchAll(client, table, orderBy) {
   }
 }
 
+// Gagal bila server tidak menjawab dalam batas waktu
+function withTimeout(promise, ms, message) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))]);
+}
+
 export async function loadDatabase() {
+  return withTimeout(loadDatabaseNow(), 15000, 'Supabase tidak merespons dalam 15 detik. Aplikasi memakai mode demo.');
+}
+
+async function loadDatabaseNow() {
   const client = await getClient();
   const [units, workOrders, hmLogs, pmLogs] = await Promise.all([
     fetchAll(client, 'units', ['code']),

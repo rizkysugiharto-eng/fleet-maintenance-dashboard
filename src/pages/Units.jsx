@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
 import { SITES, UNIT_TYPES } from '../data/catalog.js';
 import { formatNumber } from '../lib/format.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const EMPTY_UNIT = { code: '', siteId: 'B', type: UNIT_TYPES[0], brand: '', model: '', pmInterval: '250', ewh: '15' };
 
@@ -55,12 +56,9 @@ export default function Units() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Master Unit</h1>
-          <p className="muted">{units.length} unit pada site terpilih</p>
-        </div>
-      </div>
+      <PageHeader step="settings" title="Master Unit">
+        Daftar unit alat berat ({units.length} unit pada site terpilih). Unit baru harus didaftarkan di sini sebelum bisa diberi WO dan HM.
+      </PageHeader>
 
       {message && (
         <p className="alert alert-good" role="status">

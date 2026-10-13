@@ -9,6 +9,7 @@ import { useData } from '../context/DataContext.jsx';
 import { formatDateMs, formatDateTimeText, formatNumber, formatRupiahCompact } from '../lib/format.js';
 import { DAY } from '../lib/kpi.js';
 import { agingSummary, backlogItems } from '../lib/planning.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function Backlog() {
   const { workOrders, refTime, openUnit } = useData();
@@ -22,15 +23,10 @@ export default function Backlog() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Backlog</h1>
-          <p className="muted">
-            {formatNumber(items.length)} WO belum selesai · {formatNumber(old)} di antaranya berumur lebih dari 90 hari · data s.d.{' '}
-            {formatDateMs(refTime - DAY)}
-          </p>
-        </div>
-      </div>
+      <PageHeader step={2} title="Backlog">
+        Pekerjaan yang belum selesai. Makin lama backlog dibiarkan, makin besar risiko kerusakan lanjutan. {formatNumber(items.length)} WO
+        belum selesai, {formatNumber(old)} di antaranya lebih dari 90 hari (data s.d. {formatDateMs(refTime - DAY)}).
+      </PageHeader>
 
       <div className="grid-2">
         <ChartCard
@@ -42,7 +38,7 @@ export default function Backlog() {
             { label: 'WO', numeric: true, render: (x) => x.value },
           ]}
         >
-          <HorizontalBarChart data={aging} formatValue={(v) => `${formatNumber(v)} WO`} formatTick={(v) => formatNumber(v)} labelWidth={84} />
+          <HorizontalBarChart data={aging} formatValue={(v) => `${formatNumber(v)} WO`} formatTick={(v) => formatNumber(v)} labelWidth={84} highlight="max" />
         </ChartCard>
         <ChartCard
           title="Backlog per status"

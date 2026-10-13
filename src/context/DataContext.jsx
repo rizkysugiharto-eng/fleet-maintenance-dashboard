@@ -28,7 +28,9 @@ const loadLocalData = () => loadLocal() ?? buildSeedData();
 export function DataProvider({ children }) {
   const [data, setData] = useState(loadLocalData);
   const [prefs, setPrefs] = useState(() => {
-    const initial = { theme: 'dark', site: 'all', role: 'user', source: 'auto', ...loadPrefs() };
+    const stored = loadPrefs();
+    // Versi 3 memakai tema terang sebagai bawaan; preferensi tema lama tidak dipakai lagi
+    const initial = { site: 'all', role: 'user', source: 'auto', ...stored, ...(stored.version === 3 ? {} : { theme: 'light' }), version: 3 };
     document.documentElement.dataset.theme = initial.theme;
     return initial;
   });

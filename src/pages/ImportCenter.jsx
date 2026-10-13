@@ -8,6 +8,7 @@ import { SITE_A_SOURCE } from '../data/seed.js';
 import { downloadCsv, parseCsv } from '../lib/csv.js';
 import { formatNumber } from '../lib/format.js';
 import { normalizeWorkOrder, validateWorkOrder } from '../lib/validation.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const TEMPLATE_COLUMNS = ['unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost'];
 const TEMPLATE_ROWS = [
@@ -72,12 +73,9 @@ export default function ImportCenter() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Import &amp; Sumber Data</h1>
-          <p className="muted">Asal setiap data di aplikasi ini, unduh data gabungan (raw data), dan import WO dari CSV.</p>
-        </div>
-      </div>
+      <PageHeader step={1} title="Import Data">
+        Masukkan banyak work order sekaligus dari file CSV (misalnya hasil export Excel), lihat asal setiap data, dan unduh data gabungan.
+      </PageHeader>
 
       <div className="source-grid">
         {sources.map((s) => (

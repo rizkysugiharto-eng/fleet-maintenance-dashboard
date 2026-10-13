@@ -1,5 +1,5 @@
 // Kesehatan Unit: kartu per unit dengan status sederhana (Breakdown / Perlu perhatian / Sehat).
-// Klik kartu untuk membuka Unit 360.
+// Klik kartu untuk membuka detail unit.
 
 import { useMemo, useState } from 'react';
 import { LevelBadge } from '../components/Badges.jsx';
@@ -8,6 +8,7 @@ import { isUnscheduled } from '../data/catalog.js';
 import { formatHours, formatNumber, formatPercent } from '../lib/format.js';
 import { DAY, TARGETS, calcKpi } from '../lib/kpi.js';
 import { pmForecast } from '../lib/planning.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const LEVEL_TEXT = { critical: 'Breakdown', warning: 'Perlu perhatian', good: 'Sehat' };
 
@@ -45,17 +46,19 @@ export default function EquipmentHealth() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Kesehatan Unit</h1>
-          <p className="muted">Kondisi setiap unit dalam 30 hari terakhir. Klik kartu untuk detail lengkap (Unit 360).</p>
-        </div>
-        <div className="legend">
-          <LevelBadge level="critical">{count('critical')} breakdown</LevelBadge>
-          <LevelBadge level="warning">{count('warning')} perlu perhatian</LevelBadge>
-          <LevelBadge level="good">{count('good')} sehat</LevelBadge>
-        </div>
-      </div>
+      <PageHeader
+        step={2}
+        title="Kondisi Unit"
+        actions={
+          <>
+            <LevelBadge level="critical">{count('critical')} breakdown</LevelBadge>
+            <LevelBadge level="warning">{count('warning')} perlu perhatian</LevelBadge>
+            <LevelBadge level="good">{count('good')} sehat</LevelBadge>
+          </>
+        }
+      >
+        Kondisi setiap unit dalam 30 hari terakhir. Klik kartu untuk membuka detail unit.
+      </PageHeader>
 
       <div className="card filters" role="group" aria-label="Filter unit">
         <label>

@@ -8,6 +8,7 @@ import { formatDate } from '../data/simulate.js';
 import { formatDateMs, formatNumber } from '../lib/format.js';
 import { DAY, toMs } from '../lib/kpi.js';
 import { unitHmStatus } from '../lib/planning.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function HourMeter() {
   const { units, data, hmIndex, refTime, addHmReading, openUnit, canWrite } = useData();
@@ -53,12 +54,9 @@ export default function HourMeter() {
 
   return (
     <div className="page">
-      <div className="page-title">
-        <div>
-          <h1>Hour Meter</h1>
-          <p className="muted">Pembacaan HM harian per unit. Unit yang lama tidak di-update membuat perhitungan MA/UA kurang akurat.</p>
-        </div>
-      </div>
+      <PageHeader step={1} title="Hour Meter">
+        Catat angka hour meter (HM) setiap unit per hari. HM adalah sumber jam kerja unit untuk menghitung MA, UA, MTBF, dan jadwal PM.
+      </PageHeader>
 
       <div className="grid-main-side">
         <section className="card table-wrap">

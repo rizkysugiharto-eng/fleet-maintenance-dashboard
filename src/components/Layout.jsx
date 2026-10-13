@@ -1,58 +1,51 @@
-// Kerangka aplikasi: header (judul, jam, cari unit, site, tema, peran) + sidebar menu.
+// Kerangka aplikasi: header (judul, tanggal data, cari unit, site, sumber data, tema)
+// + sidebar menu yang disusun mengikuti alur kerja: catat → pantau → analisis.
 
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext.jsx';
 import { SITES } from '../data/catalog.js';
+import { formatDateMs } from '../lib/format.js';
+import { DAY } from '../lib/kpi.js';
 import Icon from './Icon.jsx';
 import Unit360 from './Unit360.jsx';
 
 const NAV = [
+  { title: 'Ringkasan', items: [{ to: '/', label: 'Beranda', icon: 'home' }] },
   {
-    title: 'Analitik',
+    step: 1,
+    title: 'Catat data',
     items: [
-      { to: '/', label: 'Dashboard', icon: 'dashboard' },
-      { to: '/health', label: 'Kesehatan Unit', icon: 'health' },
+      { to: '/input', label: 'Input Work Order', icon: 'plus' },
+      { to: '/hour-meter', label: 'Hour Meter', icon: 'gauge' },
+      { to: '/import', label: 'Import Data', icon: 'upload' },
     ],
   },
   {
-    title: 'Operasional',
+    step: 2,
+    title: 'Pantau pekerjaan',
     items: [
       { to: '/work-orders', label: 'Laporan Work Order', icon: 'report' },
-      { to: '/input', label: 'Input Work Order', icon: 'plus' },
-    ],
-  },
-  {
-    title: 'Maintenance',
-    items: [
-      { to: '/hour-meter', label: 'Hour Meter', icon: 'gauge' },
-      { to: '/pm', label: 'Perencanaan PM', icon: 'calendar' },
       { to: '/backlog', label: 'Backlog', icon: 'backlog' },
+      { to: '/health', label: 'Kondisi Unit', icon: 'health' },
     ],
   },
   {
-    title: 'Pusat Data',
+    step: 3,
+    title: 'Analisis & rencana',
     items: [
-      { to: '/import', label: 'Import & Sumber Data', icon: 'upload' },
+      { to: '/dashboard', label: 'Dashboard KPI', icon: 'dashboard' },
+      { to: '/pm', label: 'Perencanaan PM', icon: 'calendar' },
+    ],
+  },
+  {
+    title: 'Pengaturan',
+    items: [
       { to: '/database', label: 'Database & Login', icon: 'database' },
       { to: '/units', label: 'Master Unit', icon: 'truck', admin: true },
     ],
   },
 ];
-
-function LiveClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="clock" aria-label="Jam saat ini">
-      {now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-      <small>{now.toLocaleTimeString('id-ID')}</small>
-    </div>
-  );
-}
 
 function UnitSearch() {
   const { data, openUnit } = useData();
@@ -61,6 +54,7 @@ function UnitSearch() {
   function submit(e) {
     e.preventDefault();
     const code = query.trim().toUpperCase();
+    if (!code) return;
     const unit = data.units.find((u) => u.code === code) ?? data.units.find((u) => u.code.includes(code));
     if (unit) {
       openUnit(unit.code);
@@ -70,13 +64,13 @@ function UnitSearch() {
 
   return (
     <form className="unit-search" onSubmit={submit} role="search">
-      <Icon name="search" size={14} />
+      <Icon name="search" size={15} />
       <input
         list="unit-codes"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Cari unit → Enter"
-        aria-label="Cari kode unit"
+        placeholder="Cari kode unit…"
+        aria-label="Cari kode unit, lalu tekan Enter"
       />
       <datalist id="unit-codes">
         {data.units.map((u) => (
@@ -100,14 +94,14 @@ function SourceBadge() {
     );
   }
   return (
-    <NavLink to="/database" className="badge status-warning" title="Data demo di browser ini">
-      ● Demo lokal
+    <NavLink to="/database" className="badge status-warning" title="Data contoh yang tersimpan di browser ini">
+      ● Mode demo
     </NavLink>
   );
 }
 
 export default function Layout({ children }) {
-  const { prefs, setPref, unit360, source, role } = useData();
+  const { prefs, setPref, unit360, source, role, refTime } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -116,20 +110,27 @@ export default function Layout({ children }) {
   return (
     <div className="app">
       <header className="app-header">
-        <button type="button" className="btn-icon menu-button" onClick={() => setMenuOpen((v) => !v)} aria-label="Buka menu" aria-expanded={menuOpen}>
+        <button
+          type="button"
+          className="btn-icon menu-button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Buka menu"
+          aria-expanded={menuOpen}
+        >
           <Icon name="menu" />
         </button>
-        <div className="brand">
+        <Link to="/" className="brand">
           <span className="brand-mark" aria-hidden="true">
             F
           </span>
-          <div>
-            <div className="brand-title">Fleet Maintenance &amp; Reliability</div>
-            <div className="brand-sub">Monitoring KPI armada alat berat · data dummy</div>
-          </div>
-        </div>
+          <span>
+            <span className="brand-title">Fleet Maintenance</span>
+            <br />
+            <span className="brand-sub">Monitoring perawatan alat berat</span>
+          </span>
+        </Link>
         <div className="header-tools">
-          <LiveClock />
+          <span className="data-date">Data s.d. {formatDateMs(refTime - DAY)}</span>
           <UnitSearch />
           <select value={prefs.site} onChange={(e) => setPref('site', e.target.value)} aria-label="Pilih site">
             <option value="all">Semua site</option>
@@ -139,13 +140,13 @@ export default function Layout({ children }) {
               </option>
             ))}
           </select>
-          <SourceBadge />
           {source.mode === 'local' && (
-            <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran">
+            <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran (mode demo)">
               <option value="user">Peran: User</option>
               <option value="admin">Peran: Admin</option>
             </select>
           )}
+          <SourceBadge />
           <button
             type="button"
             className="btn-icon"
@@ -160,22 +161,25 @@ export default function Layout({ children }) {
 
       {menuOpen && <button type="button" className="sidebar-backdrop" aria-label="Tutup menu" onClick={() => setMenuOpen(false)} />}
       <nav className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Menu utama">
-        {NAV.map((group) => (
-          <div className="nav-group" key={group.title}>
-            <div className="nav-group-title">{group.title.toUpperCase()}</div>
-            {group.items
-              .filter((item) => !item.admin || role === 'admin')
-              .map((item) => (
+        {NAV.map((group) => {
+          const items = group.items.filter((item) => !item.admin || role === 'admin');
+          if (items.length === 0) return null;
+          return (
+            <div className="nav-group" key={group.title}>
+              <div className="nav-group-title">
+                {group.step && <span className="step-dot">{group.step}</span>}
+                {group.title}
+              </div>
+              {items.map((item) => (
                 <NavLink key={item.to} to={item.to} end={item.to === '/'}>
                   <Icon name={item.icon} />
                   {item.label}
                 </NavLink>
               ))}
-          </div>
-        ))}
-        <div className="sidebar-footer">
-          Data fiktif untuk portfolio. Open source oleh Rizky Bagus Eka Sugiharto.
-        </div>
+            </div>
+          );
+        })}
+        <div className="sidebar-footer">Data fiktif untuk portfolio · open source oleh Rizky Bagus Eka Sugiharto</div>
       </nav>
 
       <main>{children}</main>

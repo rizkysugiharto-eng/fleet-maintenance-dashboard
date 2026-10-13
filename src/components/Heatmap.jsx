@@ -13,6 +13,8 @@ function level(value, max) {
 export default function Heatmap({ rows, buckets, max, onSelect, unitLabel = 'jam down / unit' }) {
   const colors = useChartColors();
   const labelEvery = Math.ceil(buckets.length / 12);
+  // Sel dengan downtime tertinggi diberi bingkai merah
+  const worst = rows.flatMap((r) => r.cells.map((v, i) => ({ row: r.name, i, v }))).reduce((a, b) => (b.v > a.v ? b : a), { v: 0 });
 
   return (
     <div className="heatmap">
@@ -27,9 +29,12 @@ export default function Heatmap({ rows, buckets, max, onSelect, unitLabel = 'jam
                 key={buckets[i].start}
                 type="button"
                 className="heatmap-cell"
-                style={{ background: colors.heat[level(value, max)] }}
-                title={`${row.name} · ${buckets[i].label}: ${formatNumber(value, 1)} ${unitLabel}`}
-                aria-label={`${row.name}, ${buckets[i].label}: ${formatNumber(value, 1)} ${unitLabel}`}
+                style={{
+                  background: colors.heat[level(value, max)],
+                  ...(worst.row === row.name && worst.i === i ? { boxShadow: `0 0 0 2px ${colors.critical}`, position: 'relative', zIndex: 1 } : {}),
+                }}
+                title={`${row.name} · ${buckets[i].label}: ${formatNumber(value, 1)} ${unitLabel}${worst.row === row.name && worst.i === i ? ' (tertinggi)' : ''}`}
+                aria-label={`${row.name}, ${buckets[i].label}: ${formatNumber(value, 1)} ${unitLabel}${worst.row === row.name && worst.i === i ? ', tertinggi' : ''}`}
                 onClick={() => onSelect?.(row.name, buckets[i])}
               />
             ))}
@@ -54,6 +59,12 @@ export default function Heatmap({ rows, buckets, max, onSelect, unitLabel = 'jam
           <span key={c} className="swatch" style={{ background: c }} />
         ))}
         <span>{formatNumber(max)} {unitLabel}</span>
+        {worst.v > 0 && (
+          <span style={{ marginLeft: 'auto' }}>
+            <span className="swatch" style={{ display: 'inline-block', verticalAlign: 'middle', background: 'transparent', boxShadow: `inset 0 0 0 2px ${colors.critical}` }} />{' '}
+            Tertinggi: {worst.row} · {buckets[worst.i].label} ({formatNumber(worst.v)} jam)
+          </span>
+        )}
       </div>
     </div>
   );
