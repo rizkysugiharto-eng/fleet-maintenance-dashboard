@@ -11,7 +11,9 @@ export function unitHmStatus(hmIndex, unitCode, refTime) {
   if (!series || series.length === 0) return { hm: null, ewh: null, lastUpdate: null };
   const last = series[series.length - 1];
   const t = Math.min(refTime, last.t);
-  const ewh = (hmAt(series, t) - hmAt(series, t - 30 * DAY)) / 30;
+  // Jendela 30 hari, atau lebih pendek bila data HM unit belum sampai 30 hari
+  const windowDays = Math.min(30, (t - series[0].t) / DAY);
+  const ewh = windowDays > 0 ? (hmAt(series, t) - hmAt(series, t - windowDays * DAY)) / windowDays : null;
   return { hm: last.hm, ewh, lastUpdate: last.t - DAY };
 }
 

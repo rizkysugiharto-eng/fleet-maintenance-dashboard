@@ -1,49 +1,44 @@
 // Form input work order oleh User (planner/foreman).
-// Data divalidasi dulu sebelum disimpan — mirip langkah cleaning di Power Query,
-// tapi dilakukan di awal supaya data yang salah tidak pernah masuk.
+// Data divalidasi dulu sebelum disimpan, supaya data yang salah tidak pernah masuk.
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext.jsx';
-import { COMPONENTS, PM_COMPONENT, WO_TYPES } from '../data/dummy.js';
-import { parseTime } from '../lib/kpi.js';
+import { COMPONENTS, DELAY_REASONS, PM_COMPONENT, STATUSES, WO_TYPES } from '../data/catalog.js';
+import { normalizeWorkOrder, validateWorkOrder } from '../lib/validation.js';
 
 const EMPTY_FORM = {
   unitCode: '',
   type: 'BM',
+  status: 'In Progress',
   component: '',
-  description: '',
+  problem: '',
   start: '',
   end: '',
+  delayReason: '',
+  delayHours: '0',
   cost: '',
 };
 
-function validate(form) {
-  const errors = {};
-  if (!form.unitCode) errors.unitCode = 'Pilih unit.';
-  if (!form.component) errors.component = 'Pilih komponen.';
-  if (form.description.trim().length < 5) errors.description = 'Deskripsi minimal 5 karakter.';
-  if (!form.start) errors.start = 'Isi waktu mulai.';
-  if (form.start && form.end && parseTime(form.end) <= parseTime(form.start)) {
-    errors.end = 'Waktu selesai harus setelah waktu mulai.';
-  }
-  if (form.cost === '' || Number(form.cost) < 0) errors.cost = 'Isi biaya (0 atau lebih).';
-  return errors;
-}
-
 export default function InputWorkOrder() {
-  const { units, addWorkOrder } = useData();
+  const { data, unitByCode, addWorkOrder, openUnit } = useData();
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [savedId, setSavedId] = useState(null);
 
-  const componentOptions = form.type === 'PM' ? [PM_COMPONENT] : COMPONENTS;
+  const componentOptions = form.type === 'PM' ? [PM_COMPONENT] : Object.keys(COMPONENTS);
+  const problemOptions = COMPONENTS[form.component] ?? [];
 
   function update(field, value) {
     setForm((f) => {
       const next = { ...f, [field]: value };
-      // Ganti tipe → reset komponen bila tidak cocok lagi
-      if (field === 'type') next.component = value === 'PM' ? PM_COMPONENT : '';
+      if (field === 'type') {
+        next.component = value === 'PM' ? PM_COMPONENT : '';
+        next.problem = '';
+      }
+      if (field === 'component') next.problem = '';
+      // Mengisi waktu selesai berarti pekerjaan sudah selesai
+      if (field === 'end') next.status = value ? 'Completed' : f.status === 'Completed' ? 'In Progress' : f.status;
       return next;
     });
     setSavedId(null);
@@ -51,20 +46,11 @@ export default function InputWorkOrder() {
 
   function handleSubmit(event) {
     event.preventDefault();
-    const found = validate(form);
+    const wo = normalizeWorkOrder(form);
+    const found = validateWorkOrder(wo, unitByCode);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-
-    const id = addWorkOrder({
-      unitCode: form.unitCode,
-      type: form.type,
-      component: form.component,
-      description: form.description.trim(),
-      start: form.start,
-      end: form.end || null,
-      cost: Number(form.cost),
-    });
-    setSavedId(id);
+    setSavedId(addWorkOrder(wo));
     setForm(EMPTY_FORM);
   }
 
@@ -82,17 +68,19 @@ export default function InputWorkOrder() {
   const errorProps = (name) => (errors[name] ? { 'aria-invalid': true, 'aria-describedby': `${name}-error` } : {});
 
   return (
-    <div className="page">
+    <div className="page" style={{ maxWidth: 820 }}>
       <div className="page-title">
-        <h1>Input work order</h1>
-        <p className="muted">
-          Kosongkan waktu selesai bila pekerjaan belum selesai — WO akan tercatat sebagai <b>Open</b> (backlog).
-        </p>
+        <div>
+          <h1>Input Work Order</h1>
+          <p className="muted">
+            Catat setiap pekerjaan maintenance. Kosongkan waktu selesai bila unit masih dikerjakan — WO masuk <b>backlog</b>.
+          </p>
+        </div>
       </div>
 
       {savedId && (
         <p className="alert alert-good" role="status">
-          ✓ {savedId} tersimpan. <Link to="/work-orders">Lihat data work order →</Link>
+          ✓ {savedId} tersimpan. <Link to="/work-orders">Lihat laporan work order →</Link>
         </p>
       )}
 
@@ -101,24 +89,30 @@ export default function InputWorkOrder() {
           Unit
           <select value={form.unitCode} onChange={(e) => update('unitCode', e.target.value)} {...errorProps('unitCode')}>
             <option value="">— Pilih unit —</option>
-            {units.map((u) => (
+            {data.units.map((u) => (
               <option key={u.code} value={u.code}>
-                {u.code} · {u.brand} {u.model}
+                {u.code} · {u.type} · Site {u.siteId}
               </option>
             ))}
           </select>
           {fieldError('unitCode')}
+          {form.unitCode && (
+            <button type="button" className="link-button small" onClick={() => openUnit(form.unitCode)} style={{ alignSelf: 'flex-start' }}>
+              Lihat riwayat unit ini
+            </button>
+          )}
         </label>
 
         <label>
-          Tipe maintenance
+          Jenis maintenance
           <select value={form.type} onChange={(e) => update('type', e.target.value)}>
-            {Object.entries(WO_TYPES).map(([code, name]) => (
+            {Object.entries(WO_TYPES).map(([code, t]) => (
               <option key={code} value={code}>
-                {code} — {name}
+                {code} — {t.label}
               </option>
             ))}
           </select>
+          <span className="hint">{WO_TYPES[form.type].hint}</span>
         </label>
 
         <label>
@@ -132,16 +126,19 @@ export default function InputWorkOrder() {
           {fieldError('component')}
         </label>
 
-        <label className="span-2">
-          Deskripsi pekerjaan
+        <label>
+          Kerusakan / pekerjaan
           <input
-            type="text"
-            value={form.description}
-            placeholder="Contoh: Ganti hose hydraulic boom bocor"
-            onChange={(e) => update('description', e.target.value)}
-            {...errorProps('description')}
+            list="problem-options"
+            value={form.problem}
+            placeholder="Contoh: Hose bocor"
+            onChange={(e) => update('problem', e.target.value)}
           />
-          {fieldError('description')}
+          <datalist id="problem-options">
+            {problemOptions.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
         </label>
 
         <label>
@@ -157,6 +154,18 @@ export default function InputWorkOrder() {
         </label>
 
         <label>
+          Status
+          <select value={form.status} onChange={(e) => update('status', e.target.value)} {...errorProps('status')}>
+            {Object.entries(STATUSES).map(([s, info]) => (
+              <option key={s} value={s}>
+                {s} — {info.hint}
+              </option>
+            ))}
+          </select>
+          {fieldError('status')}
+        </label>
+
+        <label>
           Biaya (Rp)
           <input
             type="number"
@@ -169,6 +178,30 @@ export default function InputWorkOrder() {
             {...errorProps('cost')}
           />
           {fieldError('cost')}
+        </label>
+
+        <label>
+          Alasan delay (bila ada)
+          <select value={form.delayReason} onChange={(e) => update('delayReason', e.target.value)}>
+            <option value="">Tidak ada delay</option>
+            {DELAY_REASONS.map((d) => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Lama delay (jam)
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            value={form.delayHours}
+            disabled={!form.delayReason}
+            onChange={(e) => update('delayHours', e.target.value)}
+            {...errorProps('delayHours')}
+          />
+          {fieldError('delayHours')}
         </label>
 
         <div className="form-actions span-2">

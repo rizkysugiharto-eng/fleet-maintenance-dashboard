@@ -1,49 +1,21 @@
-// Tabel data work order: cari, filter, tutup WO yang masih Open, dan export CSV.
+// Laporan Work Order: cari, filter, ubah status, tutup WO, dan export CSV.
 
 import { useMemo, useState } from 'react';
+import { StatusBadge, TypeTag } from '../components/Badges.jsx';
+import { durationOf } from '../components/WorkOrderTable.jsx';
 import { useData } from '../context/DataContext.jsx';
-import { WO_TYPES } from '../data/dummy.js';
-import { hoursBetween, parseTime } from '../lib/kpi.js';
+import { DELAY_REASONS, STATUSES, WO_TYPES } from '../data/catalog.js';
 import { formatDateTimeText, formatNumber, formatRupiah } from '../lib/format.js';
+import { downloadCsv } from '../lib/csv.js';
+import { toMs } from '../lib/kpi.js';
 
 const PAGE_SIZE = 50;
-
-function durationHours(wo) {
-  return wo.end ? hoursBetween(parseTime(wo.start), parseTime(wo.end)) : null;
-}
-
-function downloadCsv(rows) {
-  const header = ['No WO', 'Unit', 'Tipe', 'Komponen', 'Deskripsi', 'Mulai', 'Selesai', 'Durasi (jam)', 'Biaya (Rp)', 'Status'];
-  const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const lines = rows.map((wo) =>
-    [
-      wo.id,
-      wo.unitCode,
-      wo.type,
-      wo.component,
-      wo.description,
-      wo.start,
-      wo.end ?? '',
-      durationHours(wo)?.toFixed(2) ?? '',
-      wo.cost,
-      wo.status,
-    ]
-      .map(escape)
-      .join(','),
-  );
-  const csv = [header.map(escape).join(','), ...lines].join('\n');
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'work-orders.csv';
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+const CSV_COLUMNS = ['id', 'siteId', 'unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost', 'source'];
 
 function CloseWorkOrder({ workOrder, onClose }) {
   const [open, setOpen] = useState(false);
   const [end, setEnd] = useState('');
-  const invalid = end && parseTime(end) <= parseTime(workOrder.start);
+  const invalid = end && toMs(end) <= toMs(workOrder.start);
 
   if (!open) {
     return (
@@ -54,12 +26,7 @@ function CloseWorkOrder({ workOrder, onClose }) {
   }
   return (
     <div className="close-wo">
-      <input
-        type="datetime-local"
-        value={end}
-        aria-label={`Waktu selesai ${workOrder.id}`}
-        onChange={(e) => setEnd(e.target.value)}
-      />
+      <input type="datetime-local" value={end} aria-label={`Waktu selesai ${workOrder.id}`} onChange={(e) => setEnd(e.target.value)} />
       <button type="button" className="btn-primary btn-small" disabled={!end || invalid} onClick={() => onClose(workOrder.id, end)}>
         Simpan
       </button>
@@ -72,8 +39,8 @@ function CloseWorkOrder({ workOrder, onClose }) {
 }
 
 export default function WorkOrders() {
-  const { units, workOrders, closeWorkOrder } = useData();
-  const [filters, setFilters] = useState({ search: '', unitCode: '', type: '', status: '' });
+  const { units, workOrders, closeWorkOrder, updateWorkOrderStatus, openUnit } = useData();
+  const [filters, setFilters] = useState({ search: '', unitCode: '', type: '', status: '', delay: '' });
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const setFilter = (key, value) => {
@@ -89,27 +56,30 @@ export default function WorkOrders() {
           (!filters.unitCode || wo.unitCode === filters.unitCode) &&
           (!filters.type || wo.type === filters.type) &&
           (!filters.status || wo.status === filters.status) &&
-          (!search || `${wo.id} ${wo.component} ${wo.description}`.toLowerCase().includes(search)),
+          (!filters.delay || wo.delayReason === filters.delay) &&
+          (!search || `${wo.id} ${wo.unitCode} ${wo.component ?? ''} ${wo.problem ?? ''}`.toLowerCase().includes(search)),
       )
-      .sort((a, b) => b.start.localeCompare(a.start)); // terbaru di atas
+      .sort((a, b) => b.start.localeCompare(a.start));
   }, [workOrders, filters]);
 
   return (
     <div className="page">
       <div className="page-title">
-        <h1>Data work order</h1>
-        <p className="muted">{formatNumber(rows.length)} dari {formatNumber(workOrders.length)} work order</p>
+        <div>
+          <h1>Laporan Work Order</h1>
+          <p className="muted">
+            {formatNumber(rows.length)} dari {formatNumber(workOrders.length)} work order · terbaru di atas
+          </p>
+        </div>
+        <button type="button" className="btn-ghost" onClick={() => downloadCsv('work-orders.csv', rows, CSV_COLUMNS)}>
+          Export CSV ({formatNumber(rows.length)})
+        </button>
       </div>
 
-      <div className="filters" role="group" aria-label="Filter work order">
+      <div className="card filters" role="group" aria-label="Filter work order">
         <label>
           Cari
-          <input
-            type="search"
-            value={filters.search}
-            placeholder="No WO, komponen, deskripsi"
-            onChange={(e) => setFilter('search', e.target.value)}
-          />
+          <input type="search" value={filters.search} placeholder="No WO, unit, komponen" onChange={(e) => setFilter('search', e.target.value)} />
         </label>
         <label>
           Unit
@@ -121,11 +91,13 @@ export default function WorkOrders() {
           </select>
         </label>
         <label>
-          Tipe
+          Jenis
           <select value={filters.type} onChange={(e) => setFilter('type', e.target.value)}>
-            <option value="">Semua tipe</option>
-            {Object.keys(WO_TYPES).map((t) => (
-              <option key={t}>{t}</option>
+            <option value="">Semua jenis</option>
+            {Object.entries(WO_TYPES).map(([code, t]) => (
+              <option key={code} value={code}>
+                {code} · {t.label}
+              </option>
             ))}
           </select>
         </label>
@@ -133,13 +105,20 @@ export default function WorkOrders() {
           Status
           <select value={filters.status} onChange={(e) => setFilter('status', e.target.value)}>
             <option value="">Semua status</option>
-            <option>Open</option>
-            <option>Closed</option>
+            {Object.keys(STATUSES).map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
         </label>
-        <button type="button" className="btn-ghost filters-action" onClick={() => downloadCsv(rows)}>
-          Export CSV
-        </button>
+        <label>
+          Alasan delay
+          <select value={filters.delay} onChange={(e) => setFilter('delay', e.target.value)}>
+            <option value="">Semua</option>
+            {DELAY_REASONS.map((d) => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="card table-wrap">
@@ -148,12 +127,12 @@ export default function WorkOrders() {
             <tr>
               <th>No WO</th>
               <th>Unit</th>
-              <th>Tipe</th>
-              <th>Komponen</th>
-              <th>Deskripsi</th>
+              <th>Jenis</th>
+              <th>Komponen / masalah</th>
               <th>Mulai</th>
               <th>Selesai</th>
               <th className="num">Durasi</th>
+              <th>Delay</th>
               <th className="num">Biaya</th>
               <th>Status</th>
             </tr>
@@ -161,19 +140,37 @@ export default function WorkOrders() {
           <tbody>
             {rows.slice(0, limit).map((wo) => (
               <tr key={wo.id}>
-                <td className="nowrap">{wo.id}</td>
-                <td>{wo.unitCode}</td>
-                <td title={WO_TYPES[wo.type]}>{wo.type}</td>
-                <td>{wo.component}</td>
-                <td>{wo.description}</td>
-                <td className="nowrap">{formatDateTimeText(wo.start)}</td>
-                <td className="nowrap">
-                  {wo.end ? formatDateTimeText(wo.end) : <CloseWorkOrder workOrder={wo} onClose={closeWorkOrder} />}
+                <td className="mono nowrap">{wo.id}</td>
+                <td>
+                  <button type="button" className="link-button" onClick={() => openUnit(wo.unitCode)}>
+                    {wo.unitCode}
+                  </button>
                 </td>
-                <td className="num">{durationHours(wo) == null ? '–' : `${formatNumber(durationHours(wo), 1)} jam`}</td>
+                <td title={WO_TYPES[wo.type]?.label}>
+                  <TypeTag type={wo.type} />
+                </td>
+                <td>{[wo.component, wo.problem].filter(Boolean).join(' · ') || <span className="muted">Tidak tercatat</span>}</td>
+                <td className="nowrap">{formatDateTimeText(wo.start)}</td>
+                <td className="nowrap">{wo.end ? formatDateTimeText(wo.end) : <CloseWorkOrder workOrder={wo} onClose={closeWorkOrder} />}</td>
+                <td className="num nowrap">{durationOf(wo) == null ? '–' : `${formatNumber(durationOf(wo), 1)} jam`}</td>
+                <td className="nowrap">{wo.delayReason ? `${wo.delayReason} · ${formatNumber(wo.delayHours, 1)} j` : '–'}</td>
                 <td className="num nowrap">{formatRupiah(wo.cost)}</td>
                 <td>
-                  <span className={`badge badge-${wo.status.toLowerCase()}`}>{wo.status}</span>
+                  {wo.status === 'Completed' ? (
+                    <StatusBadge status={wo.status} />
+                  ) : (
+                    <select
+                      value={wo.status}
+                      onChange={(e) => updateWorkOrderStatus(wo.id, e.target.value)}
+                      aria-label={`Status ${wo.id}`}
+                    >
+                      {Object.keys(STATUSES)
+                        .filter((s) => s !== 'Completed')
+                        .map((s) => (
+                          <option key={s}>{s}</option>
+                        ))}
+                    </select>
+                  )}
                 </td>
               </tr>
             ))}

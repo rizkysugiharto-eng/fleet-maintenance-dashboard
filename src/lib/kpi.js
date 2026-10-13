@@ -225,7 +225,8 @@ export function buildBuckets(from, to, granularity = chooseGranularity(from, to)
       granularity === 'month'
         ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
         : `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-    buckets.push({ start, end, label, granularity });
+    const nominal = granularity === 'day' ? DAY : granularity === 'week' ? 7 * DAY : 28 * DAY;
+    buckets.push({ start, end, label, granularity, partial: end - start < nominal });
     start = end;
   }
   return buckets;
