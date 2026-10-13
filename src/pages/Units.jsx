@@ -8,21 +8,24 @@ import { formatNumber } from '../lib/format.js';
 const EMPTY_UNIT = { code: '', siteId: 'B', type: UNIT_TYPES[0], brand: '', model: '', pmInterval: '250', ewh: '15' };
 
 export default function Units() {
-  const { prefs, units, data, addUnit, resetDemo, openUnit } = useData();
+  const { role, source, units, data, addUnit, resetDemo, openUnit } = useData();
   const [form, setForm] = useState(EMPTY_UNIT);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  if (prefs.role !== 'admin') {
+  if (role !== 'admin') {
     return (
       <div className="page">
         <h1>Master Unit</h1>
-        <p className="alert">Halaman ini hanya untuk Admin. Ganti peran di header (Peran: Admin).</p>
+        <p className="alert">
+          Halaman ini hanya untuk Admin.{' '}
+          {source.mode === 'database' ? 'Login dengan akun Admin di menu Database & Login.' : 'Ganti peran di header (Peran: Admin).'}
+        </p>
       </div>
     );
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const code = form.code.trim().toUpperCase();
     if (!/^[A-Z]{2,4}-\d{3}$/.test(code)) return setError('Kode unit berformat huruf-angka, contoh DT-209 atau EXC-105.');
@@ -30,7 +33,11 @@ export default function Units() {
     if (!form.brand.trim() || !form.model.trim()) return setError('Isi merek dan model.');
     if (!(Number(form.pmInterval) > 0) || !(Number(form.ewh) > 0 && Number(form.ewh) <= 24)) return setError('Interval PM > 0 dan EWH antara 0–24 jam.');
 
-    addUnit({ code, siteId: form.siteId, type: form.type, brand: form.brand.trim(), model: form.model.trim(), pmInterval: Number(form.pmInterval), ewh: Number(form.ewh) });
+    try {
+      await addUnit({ code, siteId: form.siteId, type: form.type, brand: form.brand.trim(), model: form.model.trim(), pmInterval: Number(form.pmInterval), ewh: Number(form.ewh) });
+    } catch (e) {
+      return setError(e.message);
+    }
     setForm(EMPTY_UNIT);
     setError('');
     setMessage(`✓ Unit ${code} ditambahkan. Input HM-nya di halaman Hour Meter.`);
@@ -144,6 +151,7 @@ export default function Units() {
             </div>
           </form>
 
+          {source.mode === 'local' && (
           <section className="card card-pad danger-zone">
             <div>
               <h2>Data demo</h2>
@@ -153,6 +161,7 @@ export default function Units() {
               Reset data demo
             </button>
           </section>
+          )}
         </div>
       </div>
     </div>

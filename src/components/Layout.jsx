@@ -34,6 +34,7 @@ const NAV = [
     title: 'Pusat Data',
     items: [
       { to: '/import', label: 'Import & Sumber Data', icon: 'upload' },
+      { to: '/database', label: 'Database & Login', icon: 'database' },
       { to: '/units', label: 'Master Unit', icon: 'truck', admin: true },
     ],
   },
@@ -88,8 +89,25 @@ function UnitSearch() {
   );
 }
 
+function SourceBadge() {
+  const { source, session, role } = useData();
+  if (source.status === 'checking') return <span className="badge status-neutral">Menghubungkan…</span>;
+  if (source.mode === 'database') {
+    return (
+      <NavLink to="/database" className="badge status-good" title="Data dari database Supabase">
+        ● Database · {session ? role : 'tamu'}
+      </NavLink>
+    );
+  }
+  return (
+    <NavLink to="/database" className="badge status-warning" title="Data demo di browser ini">
+      ● Demo lokal
+    </NavLink>
+  );
+}
+
 export default function Layout({ children }) {
-  const { prefs, setPref, unit360 } = useData();
+  const { prefs, setPref, unit360, source, role } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -121,10 +139,13 @@ export default function Layout({ children }) {
               </option>
             ))}
           </select>
-          <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran">
-            <option value="user">Peran: User</option>
-            <option value="admin">Peran: Admin</option>
-          </select>
+          <SourceBadge />
+          {source.mode === 'local' && (
+            <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran">
+              <option value="user">Peran: User</option>
+              <option value="admin">Peran: Admin</option>
+            </select>
+          )}
           <button
             type="button"
             className="btn-icon"
@@ -143,7 +164,7 @@ export default function Layout({ children }) {
           <div className="nav-group" key={group.title}>
             <div className="nav-group-title">{group.title.toUpperCase()}</div>
             {group.items
-              .filter((item) => !item.admin || prefs.role === 'admin')
+              .filter((item) => !item.admin || role === 'admin')
               .map((item) => (
                 <NavLink key={item.to} to={item.to} end={item.to === '/'}>
                   <Icon name={item.icon} />

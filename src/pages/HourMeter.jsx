@@ -10,7 +10,7 @@ import { DAY, toMs } from '../lib/kpi.js';
 import { unitHmStatus } from '../lib/planning.js';
 
 export default function HourMeter() {
-  const { units, data, hmIndex, refTime, addHmReading, openUnit } = useData();
+  const { units, data, hmIndex, refTime, addHmReading, openUnit, canWrite } = useData();
   const [form, setForm] = useState({ unitCode: '', date: formatDate(refTime - DAY), hm: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -25,7 +25,7 @@ export default function HourMeter() {
     [units, hmIndex, refTime],
   );
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const hm = Number(form.hm);
     const logs = data.hmLogs.filter((h) => h.unitCode === form.unitCode);
@@ -41,7 +41,11 @@ export default function HourMeter() {
       return setError('Kenaikan HM melebihi 24 jam per hari — periksa kembali angkanya.');
     if (after && hm > after.hm) return setError(`HM tidak boleh lebih besar dari pembacaan sesudahnya (${formatNumber(after.hm, 1)} pada ${after.date}).`);
 
-    addHmReading({ unitCode: form.unitCode, date: form.date, hm });
+    try {
+      await addHmReading({ unitCode: form.unitCode, date: form.date, hm });
+    } catch (e) {
+      return setError(e.message);
+    }
     setError('');
     setMessage(`✓ HM ${form.unitCode} tanggal ${form.date} tersimpan: ${formatNumber(hm, 1)}.`);
     setForm({ ...form, hm: '' });
@@ -116,6 +120,7 @@ export default function HourMeter() {
             <input type="number" min="0" step="0.1" value={form.hm} onChange={(e) => setForm({ ...form, hm: e.target.value })} placeholder="contoh: 12480.5" />
             <span className="hint">Angka di panel hour meter unit pada akhir shift/hari.</span>
           </label>
+          {!canWrite && <p className="hint">Login di menu Database &amp; Login untuk menyimpan HM.</p>}
           {error && (
             <p className="field-error" role="alert">
               {error}
@@ -127,7 +132,7 @@ export default function HourMeter() {
             </p>
           )}
           <div className="form-actions">
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-primary" disabled={!canWrite}>
               Simpan HM
             </button>
           </div>

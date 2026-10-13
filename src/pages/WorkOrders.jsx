@@ -12,14 +12,14 @@ import { toMs } from '../lib/kpi.js';
 const PAGE_SIZE = 50;
 const CSV_COLUMNS = ['id', 'siteId', 'unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'delayReason', 'delayHours', 'cost', 'source'];
 
-function CloseWorkOrder({ workOrder, onClose }) {
+function CloseWorkOrder({ workOrder, onClose, disabled }) {
   const [open, setOpen] = useState(false);
   const [end, setEnd] = useState('');
   const invalid = end && toMs(end) <= toMs(workOrder.start);
 
   if (!open) {
     return (
-      <button type="button" className="btn-ghost btn-small" onClick={() => setOpen(true)}>
+      <button type="button" className="btn-ghost btn-small" onClick={() => setOpen(true)} disabled={disabled}>
         Tutup WO
       </button>
     );
@@ -39,7 +39,17 @@ function CloseWorkOrder({ workOrder, onClose }) {
 }
 
 export default function WorkOrders() {
-  const { units, workOrders, closeWorkOrder, updateWorkOrderStatus, openUnit } = useData();
+  const { units, workOrders, closeWorkOrder, updateWorkOrderStatus, openUnit, canWrite } = useData();
+  const [error, setError] = useState('');
+  // Jalankan aksi simpan; bila gagal (mis. belum login), tampilkan pesannya
+  const attempt = (fn) => async (...args) => {
+    try {
+      setError('');
+      await fn(...args);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
   const [filters, setFilters] = useState({ search: '', unitCode: '', type: '', status: '', delay: '' });
   const [limit, setLimit] = useState(PAGE_SIZE);
 
@@ -75,6 +85,12 @@ export default function WorkOrders() {
           Export CSV ({formatNumber(rows.length)})
         </button>
       </div>
+
+      {error && (
+        <p className="alert" role="alert">
+          {error}
+        </p>
+      )}
 
       <div className="card filters" role="group" aria-label="Filter work order">
         <label>
@@ -151,7 +167,7 @@ export default function WorkOrders() {
                 </td>
                 <td>{[wo.component, wo.problem].filter(Boolean).join(' · ') || <span className="muted">Tidak tercatat</span>}</td>
                 <td className="nowrap">{formatDateTimeText(wo.start)}</td>
-                <td className="nowrap">{wo.end ? formatDateTimeText(wo.end) : <CloseWorkOrder workOrder={wo} onClose={closeWorkOrder} />}</td>
+                <td className="nowrap">{wo.end ? formatDateTimeText(wo.end) : <CloseWorkOrder workOrder={wo} onClose={attempt(closeWorkOrder)} disabled={!canWrite} />}</td>
                 <td className="num nowrap">{durationOf(wo) == null ? '–' : `${formatNumber(durationOf(wo), 1)} jam`}</td>
                 <td className="nowrap">{wo.delayReason ? `${wo.delayReason} · ${formatNumber(wo.delayHours, 1)} j` : '–'}</td>
                 <td className="num nowrap">{formatRupiah(wo.cost)}</td>
@@ -161,7 +177,8 @@ export default function WorkOrders() {
                   ) : (
                     <select
                       value={wo.status}
-                      onChange={(e) => updateWorkOrderStatus(wo.id, e.target.value)}
+                      onChange={(e) => attempt(updateWorkOrderStatus)(wo.id, e.target.value)}
+                      disabled={!canWrite}
                       aria-label={`Status ${wo.id}`}
                     >
                       {Object.keys(STATUSES)

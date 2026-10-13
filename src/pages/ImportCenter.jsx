@@ -17,7 +17,7 @@ const TEMPLATE_ROWS = [
 const WO_COLUMNS = ['id', 'siteId', ...TEMPLATE_COLUMNS, 'source'];
 
 export default function ImportCenter() {
-  const { data, unitByCode, importWorkOrders } = useData();
+  const { data, unitByCode, importWorkOrders, canWrite } = useData();
   const [preview, setPreview] = useState(null);
   const [message, setMessage] = useState('');
 
@@ -57,11 +57,15 @@ export default function ImportCenter() {
     setMessage('');
   }
 
-  function handleImport() {
+  async function handleImport() {
     const valid = preview.rows.filter((r) => Object.keys(r.errors).length === 0).map((r) => r.wo);
-    importWorkOrders(valid);
-    setMessage(`✓ ${valid.length} WO dari ${preview.fileName} berhasil di-import.`);
-    setPreview(null);
+    try {
+      await importWorkOrders(valid);
+      setMessage(`✓ ${valid.length} WO dari ${preview.fileName} berhasil di-import.`);
+      setPreview(null);
+    } catch (e) {
+      setMessage(`✕ Gagal import: ${e.message}`);
+    }
   }
 
   const validCount = preview?.rows.filter((r) => Object.keys(r.errors).length === 0).length ?? 0;
@@ -146,7 +150,7 @@ export default function ImportCenter() {
         </label>
 
         {message && (
-          <p className="alert alert-good" role="status" style={{ marginTop: 12 }}>
+          <p className={`alert ${message.startsWith('✓') ? 'alert-good' : ''}`} role="status" style={{ marginTop: 12 }}>
             {message}
           </p>
         )}
@@ -192,7 +196,7 @@ export default function ImportCenter() {
               </table>
             </div>
             <div className="form-actions">
-              <button type="button" className="btn-primary" disabled={validCount === 0} onClick={handleImport}>
+              <button type="button" className="btn-primary" disabled={validCount === 0 || !canWrite} onClick={handleImport}>
                 Import {validCount} WO valid
               </button>
               <button type="button" className="btn-ghost" onClick={() => setPreview(null)}>

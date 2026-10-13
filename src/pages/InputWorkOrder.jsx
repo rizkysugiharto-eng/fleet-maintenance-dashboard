@@ -21,7 +21,8 @@ const EMPTY_FORM = {
 };
 
 export default function InputWorkOrder() {
-  const { data, unitByCode, addWorkOrder, openUnit } = useData();
+  const { data, unitByCode, addWorkOrder, openUnit, canWrite } = useData();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [savedId, setSavedId] = useState(null);
@@ -44,14 +45,21 @@ export default function InputWorkOrder() {
     setSavedId(null);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const wo = normalizeWorkOrder(form);
     const found = validateWorkOrder(wo, unitByCode);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    setSavedId(addWorkOrder(wo));
-    setForm(EMPTY_FORM);
+    setSaving(true);
+    try {
+      setSavedId(await addWorkOrder(wo));
+      setForm(EMPTY_FORM);
+    } catch (e) {
+      setErrors({ save: e.message });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleClear() {
@@ -78,6 +86,16 @@ export default function InputWorkOrder() {
         </div>
       </div>
 
+      {!canWrite && (
+        <p className="alert alert-info">
+          Anda melihat data database sebagai tamu. <Link to="/database">Login</Link> untuk menyimpan work order.
+        </p>
+      )}
+      {errors.save && (
+        <p className="alert" role="alert">
+          {errors.save}
+        </p>
+      )}
       {savedId && (
         <p className="alert alert-good" role="status">
           ✓ {savedId} tersimpan. <Link to="/work-orders">Lihat laporan work order →</Link>
@@ -205,8 +223,8 @@ export default function InputWorkOrder() {
         </label>
 
         <div className="form-actions span-2">
-          <button type="submit" className="btn-primary">
-            Simpan work order
+          <button type="submit" className="btn-primary" disabled={saving || !canWrite}>
+            {saving ? 'Menyimpan…' : 'Simpan work order'}
           </button>
           <button type="button" className="btn-ghost" onClick={handleClear}>
             Kosongkan form

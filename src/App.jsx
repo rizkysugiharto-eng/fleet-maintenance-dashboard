@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Backlog from './pages/Backlog.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import DatabasePage from './pages/DatabasePage.jsx';
 import EquipmentHealth from './pages/EquipmentHealth.jsx';
 import HourMeter from './pages/HourMeter.jsx';
 import ImportCenter from './pages/ImportCenter.jsx';
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/backlog" element={<Backlog />} />
         <Route path="/import" element={<ImportCenter />} />
         <Route path="/units" element={<Units />} />
+        <Route path="/database" element={<DatabasePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
