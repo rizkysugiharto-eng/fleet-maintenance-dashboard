@@ -17,6 +17,10 @@ dengan database dan login.
 > Semua data **fiktif**: Site A berasal dari dataset latihan Power BI saya
 > (`data/raw/`), Site B dibuat oleh generator data dummy. Bukan data perusahaan mana pun.
 
+> **Belajar dari project ini:** baca [docs/PANDUAN-BELAJAR.md](docs/PANDUAN-BELAJAR.md):
+> alur data dari form sampai grafik, peta file, konsep JavaScript/React/SQL, alur Git & PR,
+> latihan bertahap, dan sumber belajar.
+
 ## Fitur
 
 Menu disusun mengikuti alur kerja: **① Catat data → ② Pantau pekerjaan → ③ Analisis & rencana**.
