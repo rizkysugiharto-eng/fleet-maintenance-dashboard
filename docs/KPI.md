@@ -54,3 +54,15 @@ Dataset Excel (Site A) memakai rumus latihan yang sedikit berbeda:
 
 Karena itu angka PA/MTTR Site A di aplikasi berbeda dari Power BI. Ini disengaja
 dan bisa menjadi bahan pembahasan saat interview.
+
+Contoh untuk Site A, periode 2025:
+
+| | Power BI | Aplikasi ini |
+|---|---|---|
+| PA | 61,5% | 93,9% |
+| MTTR | 15,6 jam | 15,6 jam (di atas target ≤ 12 jam) |
+
+Dataset dummy Power BI sengaja dibuat sebagai armada dengan reliability rendah supaya ada
+masalah yang bisa dianalisis akar penyebabnya (Breakdown Maintenance menyumbang 41,6% downtime,
+BD-001 punya MTBF terendah). Di aplikasi ini PA-nya naik karena dibagi jam kalender, tetapi
+masalahnya tetap terlihat: MTTR di atas target, PM terlambat, dan backlog berumur > 90 hari.

@@ -506,6 +506,12 @@ Poin yang menunjukkan pemahaman maintenance (siapkan contohnya dari dashboard):
 - **PM compliance vs completion rate** — PM bisa "selesai" tapi terlambat secara HM.
 - **Data quality** — validasi HM tidak boleh turun / > 24 jam per hari; WO yang tumpang tindih
   tidak dihitung dua kali.
+- **"Kok PA-nya cuma 61,5%?"** (dashboard Power BI) — siapkan jawaban ini:
+  > "Itu sengaja saya buat rendah supaya ada masalah yang bisa dianalisis. Dari dashboard
+  > kelihatan Breakdown Maintenance menyumbang 41,6% downtime dan BD-001 MTBF-nya paling rendah,
+  > jadi itu prioritas pertama yang saya kejar. Di versi web, PA Site A jadi 93,9% karena saya
+  > ganti ke rumus standar yang membagi dengan jam kalender, tetapi MTTR-nya tetap 15,6 jam,
+  > di atas target 12 jam."
 
 Poin teknis:
 
