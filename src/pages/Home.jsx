@@ -12,6 +12,9 @@ import { formatHours, formatNumber, formatPercent } from '../lib/format.js';
 import { DAY, TARGETS, calcKpi, meetsTarget } from '../lib/kpi.js';
 import { backlogItems, pmForecast } from '../lib/planning.js';
 
+const KPI_DOC =
+  'https://github.com/rizkysugiharto-eng/fleet-maintenance-dashboard/blob/main/docs/KPI.md#perbedaan-dengan-rumus-di-excelpower-bi-lama';
+
 export default function Home() {
   const { units, workOrders, data, hmIndex, refTime, source, openUnit } = useData();
 
@@ -80,6 +83,15 @@ export default function Home() {
         Aplikasi ini mengikuti alur kerja maintenance alat berat. Ikuti langkah 1 → 4 di bawah, atau pakai menu di kiri yang disusun
         dengan urutan yang sama.
       </PageHeader>
+
+      <aside className="data-note" aria-label="Tentang data">
+        <b>Tentang data:</b> semua data fiktif dan sengaja dibuat dengan masalah yang umum di lapangan (MTTR di atas target, PM
+        terlambat, backlog menumpuk) supaya ada temuan yang bisa ditelusuri akar masalahnya. Site A berasal dari dataset Power BI
+        saya; di sini PA dihitung terhadap jam kalender sehingga angkanya berbeda dari versi Power BI (61,5%).{' '}
+        <a href={KPI_DOC} target="_blank" rel="noopener noreferrer">
+          Penjelasan rumus
+        </a>
+      </aside>
 
       <div className="flow">
         {steps.map((step, i) => (
