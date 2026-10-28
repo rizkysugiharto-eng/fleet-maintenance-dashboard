@@ -1,7 +1,7 @@
 // Kerangka aplikasi: header (judul, tanggal data, cari unit, site, sumber data, tema)
 // + sidebar menu yang disusun mengikuti alur kerja: catat → pantau → analisis.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext.jsx';
 import { SITES } from '../data/catalog.js';
@@ -11,7 +11,7 @@ import Icon from './Icon.jsx';
 import Unit360 from './Unit360.jsx';
 
 const NAV = [
-  { title: 'Ringkasan', items: [{ to: '/', label: 'Beranda', icon: 'home' }] },
+  { title: 'Ringkasan', items: [{ to: '/', label: 'Briefing Pagi', icon: 'home' }] },
   {
     step: 1,
     title: 'Catat data',
@@ -101,71 +101,127 @@ function SourceBadge() {
   );
 }
 
+// Pilihan tampilan (site, peran demo, sumber data, tema). Di HP pindah ke dalam menu.
+function Preferences({ className }) {
+  const { prefs, setPref, source } = useData();
+  return (
+    <div className={className}>
+      <select value={prefs.site} onChange={(e) => setPref('site', e.target.value)} aria-label="Pilih site">
+        <option value="all">Semua site</option>
+        {SITES.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name} · {s.description}
+          </option>
+        ))}
+      </select>
+      {source.mode === 'local' && (
+        <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran (mode demo)">
+          <option value="user">Peran: User</option>
+          <option value="admin">Peran: Admin</option>
+        </select>
+      )}
+      <SourceBadge />
+      <button
+        type="button"
+        className="btn-icon"
+        onClick={() => setPref('theme', prefs.theme === 'dark' ? 'light' : 'dark')}
+        aria-label={prefs.theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
+        title="Ganti tema"
+      >
+        <Icon name={prefs.theme === 'dark' ? 'sun' : 'moon'} />
+      </button>
+    </div>
+  );
+}
+
 export default function Layout({ children }) {
-  const { prefs, setPref, unit360, source, role, refTime } = useData();
+  const { unit360, role, refTime } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const headerRef = useRef(null);
+  const menuButtonRef = useRef(null);
+  const firstRender = useRef(true);
 
-  // Tutup menu HP dan kembali ke atas setiap pindah halaman
+  // Pindah halaman: tutup menu HP, kembali ke atas, dan pindahkan fokus ke judul halaman baru
+  // supaya pengguna keyboard/screen reader tahu halamannya sudah berganti.
   useEffect(() => {
     setMenuOpen(false);
     window.scrollTo(0, 0);
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const h1 = document.querySelector('main h1');
+    if (h1) {
+      h1.setAttribute('tabindex', '-1');
+      h1.focus({ preventScroll: true });
+    }
   }, [location.pathname]);
+
+  // Menu HP bisa ditutup dengan Esc; fokus kembali ke tombol menu
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  // Tinggi header dipakai sidebar yang menempel (sticky) di bawahnya
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const skipToContent = (e) => {
+    e.preventDefault(); // HashRouter: jangan ubah alamat halaman
+    document.getElementById('main-content')?.focus();
+  };
 
   return (
     <div className="app">
-      <header className="app-header">
+      <a href="#main-content" className="skip-link" onClick={skipToContent}>
+        Lewati ke konten
+      </a>
+      <header className="app-header" ref={headerRef}>
         <button
+          ref={menuButtonRef}
           type="button"
           className="btn-icon menu-button"
           onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Buka menu"
+          aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
           aria-expanded={menuOpen}
+          aria-controls="main-menu"
         >
-          <Icon name="menu" />
+          <Icon name={menuOpen ? 'close' : 'menu'} />
         </button>
-        <Link to="/" className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            F
+        <Link to="/" className="brand" aria-label="Fleet Maintenance, ke Briefing Pagi">
+          <span className="brand-mark plate" aria-hidden="true">
+            FM
           </span>
           <span>
             <span className="brand-title">Fleet Maintenance</span>
             <br />
-            <span className="brand-sub">Monitoring perawatan alat berat</span>
+            <span className="brand-sub">Papan kerja planner &amp; foreman</span>
           </span>
         </Link>
         <div className="header-tools">
           <span className="data-date">Data s.d. {formatDateMs(refTime - DAY)}</span>
           <UnitSearch />
-          <select value={prefs.site} onChange={(e) => setPref('site', e.target.value)} aria-label="Pilih site">
-            <option value="all">Semua site</option>
-            {SITES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} · {s.description}
-              </option>
-            ))}
-          </select>
-          {source.mode === 'local' && (
-            <select value={prefs.role} onChange={(e) => setPref('role', e.target.value)} aria-label="Peran (mode demo)">
-              <option value="user">Peran: User</option>
-              <option value="admin">Peran: Admin</option>
-            </select>
-          )}
-          <SourceBadge />
-          <button
-            type="button"
-            className="btn-icon"
-            onClick={() => setPref('theme', prefs.theme === 'dark' ? 'light' : 'dark')}
-            aria-label={prefs.theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
-            title="Ganti tema"
-          >
-            <Icon name={prefs.theme === 'dark' ? 'sun' : 'moon'} />
-          </button>
+          <Preferences className="header-prefs" />
         </div>
       </header>
 
-      {menuOpen && <button type="button" className="sidebar-backdrop" aria-label="Tutup menu" onClick={() => setMenuOpen(false)} />}
-      <nav className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Menu utama">
+      {menuOpen && <button type="button" className="sidebar-backdrop" aria-label="Tutup menu" tabIndex={-1} onClick={() => setMenuOpen(false)} />}
+      <nav id="main-menu" className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Menu utama">
+        <Preferences className="sidebar-prefs" />
         {NAV.map((group) => {
           const items = group.items.filter((item) => !item.admin || role === 'admin');
           if (items.length === 0) return null;
@@ -184,10 +240,12 @@ export default function Layout({ children }) {
             </div>
           );
         })}
-        <div className="sidebar-footer">Data fiktif untuk portfolio · open source oleh Rizky Bagus Eka Sugiharto</div>
+        <div className="sidebar-footer">Dibangun oleh planner, untuk planner. Data fiktif untuk portfolio · open source oleh Rizky Bagus Eka Sugiharto</div>
       </nav>
 
-      <main>{children}</main>
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
       {unit360 && <Unit360 key={unit360} />}
     </div>
   );

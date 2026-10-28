@@ -252,7 +252,7 @@ export function Sparkline({ data, dataKey, color }) {
   return (
     <div className="sparkline" aria-hidden="true">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 4, right: 2, bottom: 2, left: 2 }}>
+        <LineChart data={data} margin={{ top: 4, right: 2, bottom: 2, left: 2 }} accessibilityLayer={false}>
           <YAxis hide domain={['dataMin', 'dataMax']} />
           <Line type="linear" dataKey={dataKey} stroke={color} strokeWidth={1.5} dot={false} isAnimationActive={false} />
         </LineChart>

@@ -82,3 +82,61 @@ ringkasan sebelumnya hanya berwarna hijau/merah → sekarang diberi ✓ / ✕.
 - Grafik tidak memakai dua sumbu Y (aturan *one axis*); analisis delay menampilkan jam dan frekuensi dalam satu label.
 - Setiap grafik tetap punya tombol **Tabel** sebagai alternatif membaca angka tanpa grafik.
 - Heatmap memakai gradasi satu warna (biru) karena menunjukkan *besaran*; merah hanya untuk satu sel tertinggi.
+
+---
+
+# Revisi 2 — desain "Papan Workshop" + perbaikan aksesibilitas
+
+Tanggal: 28 Oktober 2026 · Metode: pemindaian **axe-core 4.10** (WCAG 2.0/2.1/2.2 A–AA +
+best practice) di 12 halaman, tema terang & gelap, desktop 1366 px & HP 390 px, ditambah
+uji keyboard sungguhan di browser (Playwright).
+
+## Arah desain
+
+Ciri visual diambil dari benda yang ada di lapangan, supaya aplikasi terasa dibuat oleh orang plant:
+
+| Elemen | Asal idenya | Dipakai di |
+|---|---|---|
+| Plat nomor unit (huruf stensil di plat kuning) | Nomor lambung yang dicat di bodi alat | Kartu unit, daftar Briefing Pagi, Detail unit |
+| Tag status gaya LOTO: **B/D** merah, **Perlu dicek** kuning, **RFU** hijau | Tag lock-out/tag-out di workshop | Kondisi Unit, Briefing Pagi, Detail unit |
+| Meteran HM berbentuk odometer | Hour meter mekanis | Detail unit |
+| Ilustrasi siluet per tipe unit (8 tipe) | — | Kartu unit, daftar, Detail unit |
+| Garis hazard hitam-kuning (dipakai hemat) | Garis peringatan area tambang | Atas header, tepi kartu unit B/D, atas modal |
+| Sidebar arang | Papan tulis workshop | Menu utama |
+
+Huruf: **Barlow Semi Condensed** (judul & angka, sama dengan portfolio), **Inter** (teks),
+**Big Shoulders Stencil** (khusus plat unit). Latar kertas `#f5f2ea`, teks arang `#1e2124`.
+
+Ilustrasi sengaja per **tipe**, bukan per merek/model: di ukuran 36–64 px beda model tidak
+terlihat, dan meniru bentuk produk asli berisiko menjiplak desain pabrikan. Merek & model tetap
+ditulis sebagai teks.
+
+## Beranda → Briefing Pagi
+
+| Catatan alur | Penerapan |
+|---|---|
+| Baris unit bisa diklik | Setiap baris membuka Detail unit |
+| Aksi cepat untuk unit B/D | Tombol kunci pas → ubah status WO atau tutup WO (unit RFU) tanpa pindah halaman |
+| Penjelasan untuk orang awam | Kotak "Baru pertama kali? Lihat cara kerja aplikasi ini" (4 langkah, bisa dibuka-tutup) |
+| Gambaran armada utuh | "19 dari 28 unit bisa beroperasi" + bar RFU / perlu dicek / B/D |
+
+## Temuan aksesibilitas & hasil perbaikan
+
+| # | Temuan (terbukti di uji) | Perbaikan |
+|---|---|---|
+| 1 | Fokus keluar dari modal; setelah Esc fokus hilang | Tab berputar di dalam modal, fokus kembali ke pembuka (`Modal.jsx`) |
+| 2 | Ganti Periode di Detail unit → fokus melompat ke tombol Tutup | `onClose` disimpan di ref, effect hanya jalan sekali |
+| 3 | Menu HP tertutup: 15 link tak terlihat tetap bisa di-Tab | `visibility: hidden` saat tertutup, Esc menutup menu, label tombol berubah |
+| 4 | Heatmap: 371 tombol = 371 tab stop, sel 10×22 px | Satu tab stop + tombol panah (roving tabindex), sel minimal 24 px |
+| 5 | Sparkline `aria-hidden` berisi elemen fokus | `accessibilityLayer={false}` |
+| 6 | Tabel yang bisa digeser tidak bisa diakses keyboard | Komponen `TableWrap`: bisa difokus bila isinya memang perlu digeser |
+| 7 | Judul tab browser sama di semua halaman | Judul halaman dipakai sebagai judul tab |
+| 8 | Tidak ada "Lewati ke konten"; pindah halaman tidak memindahkan fokus | Skip link + fokus ke judul halaman baru |
+| 9 | Submit form gagal → fokus tetap di tombol | Fokus pindah ke isian pertama yang salah |
+| 10 | Tab Detail unit tanpa `tabpanel` & tombol panah | Pola tab WAI-ARIA lengkap |
+| 11 | Label tombol menu tidak berubah | "Buka menu" / "Tutup menu" + `aria-controls` |
+| 12 | Tombol Tabel/Grafik tidak memberi tahu status | `aria-pressed` |
+| 13 | Header HP menempel 194 px (23% layar) | Header satu baris ±65 px; site, peran, tema pindah ke menu |
+| 14 | Target sentuh 21–30 px di HP | Minimal 44 px di HP |
+
+Hasil akhir axe-core: **0 pelanggaran** di semua halaman (terang, gelap, HP, dan menu HP terbuka).

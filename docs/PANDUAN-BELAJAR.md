@@ -208,7 +208,7 @@ fleet-maintenance-dashboard/
     │   ├── Unit360.jsx        Jendela detail unit
     │   └── ...
     └── pages/                 Satu file = satu menu
-        ├── Home.jsx           Beranda (alur kerja)
+        ├── Home.jsx           Briefing Pagi (beranda)
         ├── InputWorkOrder.jsx · HourMeter.jsx · ImportCenter.jsx     (Langkah 1)
         ├── WorkOrders.jsx · Backlog.jsx · EquipmentHealth.jsx         (Langkah 2)
         ├── Dashboard.jsx · PmPlanning.jsx · Report.jsx                (Langkah 3)
@@ -418,7 +418,7 @@ Kerjakan berurutan. Setiap latihan: buat branch → ubah → `npm test` → liha
 
 | # | Latihan | File | Yang dipelajari |
 |---|---|---|---|
-| 1 | Ubah teks penjelasan di Beranda | `src/pages/Home.jsx` | Struktur JSX, hot reload |
+| 1 | Ubah teks penjelasan di Briefing Pagi | `src/pages/Home.jsx` | Struktur JSX, hot reload |
 | 2 | Ubah target PA dari 85% menjadi 90%. Perhatikan kartu KPI & tabel berubah warna/status | `src/lib/kpi.js` (`TARGETS`) | Konstanta dipakai banyak tempat |
 | 3 | Tambah alasan delay baru "Menunggu operator" | `src/data/catalog.js` (`DELAY_REASONS`) | Data master → otomatis muncul di form & filter |
 | 4 | Tambah kolom "Tipe" di tabel Backlog | `src/pages/Backlog.jsx` | Membaca data unit lewat `unitByCode` |

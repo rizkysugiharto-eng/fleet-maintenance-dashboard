@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { breakdownTrend, componentPareto, delayAnalysis, downtimeHeatmap } from './analytics.js';
 import { buildBuckets, buildHmIndex, calcKpi, hmAt, periodFromDates, toMs } from './kpi.js';
-import { agingSummary, backlogItems, pmCompliance, pmForecast } from './planning.js';
+import { agingSummary, backlogItems, pmCompliance, pmForecast, unitConditions } from './planning.js';
 
 const unit = { code: 'EX-001', siteId: 'A', type: 'Excavator', pmInterval: 250, ewh: 10 };
 // Periode 10 hari = 240 jam kalender untuk 1 unit
@@ -159,6 +159,22 @@ describe('planning', () => {
     );
     expect(items).toHaveLength(2);
     expect(agingSummary(items).map((b) => b.value)).toEqual([1, 0, 0, 1]);
+  });
+});
+
+describe('kondisi unit (papan kerja)', () => {
+  it('unit dengan breakdown aktif = B/D dan tampil paling atas', () => {
+    const other = { ...unit, code: 'EX-002' };
+    const rows = unitConditions({
+      units: [other, unit],
+      workOrders: [wo({ id: 'OPEN', start: '2025-01-09T00:00', end: null, status: 'In Progress', component: 'Engine' })],
+      pmLogs: [],
+      hmIndex,
+      refTime: to,
+    });
+    expect(rows[0]).toMatchObject({ level: 'critical', reasons: ['Engine · In Progress'] });
+    expect(rows[0].unit.code).toBe('EX-001');
+    expect(rows[1]).toMatchObject({ level: 'good', active: null });
   });
 });
 

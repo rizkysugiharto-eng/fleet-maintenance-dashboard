@@ -8,6 +8,7 @@ import { formatDateMs, formatNumber, formatPercent } from '../lib/format.js';
 import { DAY } from '../lib/kpi.js';
 import { PM_STATUS_LEVEL, PM_TOLERANCE, pmCompletionRate, pmCompliance, pmForecast } from '../lib/planning.js';
 import PageHeader from '../components/PageHeader.jsx';
+import TableWrap from '../components/TableWrap.jsx';
 
 export default function PmPlanning() {
   const { units, workOrders, data, hmIndex, refTime, openUnit } = useData();
@@ -71,7 +72,7 @@ export default function PmPlanning() {
             </button>
           )}
         </header>
-        <div className="table-wrap">
+        <TableWrap label="Tabel forecast PM per unit">
           <table>
             <thead>
               <tr>
@@ -112,7 +113,7 @@ export default function PmPlanning() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       </section>
 
       <section className="card card-pad">
@@ -122,7 +123,7 @@ export default function PmPlanning() {
             <p className="muted">HM jadwal vs HM aktual saat PM dikerjakan · deviasi positif = terlambat · urut per unit, terbaru di atas</p>
           </div>
         </header>
-        <div className="table-wrap" style={{ maxHeight: 420 }}>
+        <TableWrap label="Tabel log eksekusi PM" style={{ maxHeight: 420 }}>
           <table>
             <thead>
               <tr>
@@ -154,7 +155,7 @@ export default function PmPlanning() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       </section>
     </div>
   );

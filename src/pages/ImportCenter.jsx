@@ -9,6 +9,7 @@ import { downloadCsv, parseCsv } from '../lib/csv.js';
 import { formatNumber } from '../lib/format.js';
 import { normalizeWorkOrder, validateWorkOrder } from '../lib/validation.js';
 import PageHeader from '../components/PageHeader.jsx';
+import TableWrap from '../components/TableWrap.jsx';
 
 const TEMPLATE_COLUMNS = ['unitCode', 'type', 'status', 'start', 'end', 'component', 'problem', 'responseHours', 'delayReason', 'delayHours', 'cost'];
 const TEMPLATE_ROWS = [
@@ -159,7 +160,7 @@ export default function ImportCenter() {
               {preview.fileName}: {preview.rows.length} baris · <b>{validCount} valid</b> · {preview.rows.length - validCount} bermasalah (tidak
               ikut di-import)
             </p>
-            <div className="table-wrap" style={{ maxHeight: 360 }}>
+            <TableWrap label="Tabel hasil pemeriksaan import" style={{ maxHeight: 360 }}>
               <table>
                 <thead>
                   <tr>
@@ -192,7 +193,7 @@ export default function ImportCenter() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
             <div className="form-actions">
               <button type="button" className="btn-primary" disabled={validCount === 0 || !canWrite} onClick={handleImport}>
                 Import {validCount} WO valid

@@ -10,6 +10,7 @@ import { formatDateMs, formatDateTimeText, formatNumber, formatRupiahCompact } f
 import { DAY } from '../lib/kpi.js';
 import { agingSummary, backlogItems } from '../lib/planning.js';
 import PageHeader from '../components/PageHeader.jsx';
+import TableWrap from '../components/TableWrap.jsx';
 
 export default function Backlog() {
   const { workOrders, refTime, openUnit } = useData();
@@ -72,7 +73,7 @@ export default function Backlog() {
             ))}
           </select>
         </header>
-        <div className="table-wrap">
+        <TableWrap label="Tabel daftar backlog">
           <table>
             <thead>
               <tr>
@@ -118,7 +119,7 @@ export default function Backlog() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       </section>
     </div>
   );

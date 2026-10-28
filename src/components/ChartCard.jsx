@@ -2,6 +2,7 @@
 // supaya angka tetap bisa dibaca tanpa harus mengarahkan mouse ke grafik.
 
 import { useState } from 'react';
+import TableWrap from './TableWrap.jsx';
 
 export default function ChartCard({ title, subtitle, columns, rows, legend, children, className = '' }) {
   const [showTable, setShowTable] = useState(false);
@@ -15,14 +16,14 @@ export default function ChartCard({ title, subtitle, columns, rows, legend, chil
           {subtitle && <p className="muted">{subtitle}</p>}
         </div>
         {hasTable && (
-          <button type="button" className="btn-ghost btn-small" onClick={() => setShowTable((v) => !v)}>
-            {showTable ? 'Grafik' : 'Tabel'}
+          <button type="button" className="btn-ghost btn-small" aria-pressed={showTable} onClick={() => setShowTable((v) => !v)}>
+            Tabel
           </button>
         )}
       </header>
 
       {showTable ? (
-        <div className="table-wrap">
+        <TableWrap label={title}>
           <table>
             <thead>
               <tr>
@@ -45,7 +46,7 @@ export default function ChartCard({ title, subtitle, columns, rows, legend, chil
               ))}
             </tbody>
           </table>
-        </div>
+        </TableWrap>
       ) : (
         <>
           {legend}
