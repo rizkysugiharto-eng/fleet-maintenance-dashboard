@@ -64,3 +64,19 @@ export function pmTypeForHm(hm) {
   if (hm % 500 === 0) return 'PM500';
   return 'PM250';
 }
+
+// Kamus istilah lapangan untuk pengunjung awam (kotak sambutan di Briefing Pagi,
+// tombol "?" di KPI, dan keterangan saat kursor diarahkan ke tag status).
+export const GLOSSARY = {
+  BD: { term: 'B/D', text: 'Breakdown: unit rusak dan tidak boleh dioperasikan sampai selesai diperbaiki.' },
+  CEK: { term: 'Perlu dicek', text: 'Unit masih bisa jalan, tetapi ada tanda bahaya: ketersediaan rendah atau servis terlambat.' },
+  RFU: { term: 'RFU', text: 'Ready For Use: unit siap dioperasikan.' },
+  PA: { term: 'PA', text: 'Physical Availability: persentase waktu unit tersedia (tidak sedang rusak atau diservis). Makin tinggi makin baik.' },
+  MA: { term: 'MA', text: 'Mechanical Availability: ketersediaan dilihat dari sisi mekanis, dibanding jam kerja unit. Makin tinggi makin baik.' },
+  MTBF: { term: 'MTBF', text: 'Mean Time Between Failure: rata-rata jam kerja unit sebelum rusak lagi. Makin tinggi makin baik.' },
+  MTTR: { term: 'MTTR', text: 'Mean Time To Repair: rata-rata lama perbaikan sampai unit siap lagi. Makin rendah makin baik.' },
+  HM: { term: 'HM', text: 'Hour Meter: meteran jam kerja mesin, seperti odometer di mobil.' },
+  PM: { term: 'PM', text: 'Preventive Maintenance: servis berkala menurut HM, mis. PM250 = servis tiap 250 jam.' },
+  WO: { term: 'WO', text: 'Work Order: surat perintah kerja untuk setiap perbaikan atau servis.' },
+  BACKLOG: { term: 'Backlog', text: 'Pekerjaan yang belum selesai. Makin lama dibiarkan, makin besar risiko kerusakan lanjutan.' },
+};

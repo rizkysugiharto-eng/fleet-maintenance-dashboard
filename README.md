@@ -10,7 +10,7 @@ dengan database dan login.
 
 **Demo:** https://rizkysugiharto-eng.github.io/fleet-maintenance-dashboard/
 
-![Beranda: alur kerja](docs/screenshot-beranda.png)
+![Briefing Pagi: unit rusak, servis jatuh tempo, backlog](docs/screenshot-beranda.png)
 
 ![Dashboard KPI](docs/screenshot-dashboard.png)
 
@@ -27,9 +27,9 @@ Menu disusun mengikuti alur kerja: **① Catat data → ② Pantau pekerjaan →
 
 | Menu | Isi |
 |---|---|
-| **Beranda** | Penjelasan alur kerja 4 langkah dengan angka live, daftar yang perlu ditindaklanjuti, kondisi armada 30 hari vs target |
+| **Briefing Pagi** (beranda) | Bahan meeting pagi: unit yang rusak (bisa langsung update status / tutup WO), servis jatuh tempo, backlog menurut umur, berapa unit bisa beroperasi, KPI 30 hari vs target, dan penjelasan cara kerja aplikasi |
 | **Dashboard KPI** | 6 KPI dengan target & tren (B/D events, MTBF, MTTR, PA, MA, UA), tren breakdown terjadwal vs tak terjadwal, status WO, distribusi downtime, analisis delay, heatmap ketersediaan armada (klik sel → daftar WO), ringkasan per tipe unit, PA per unit, pareto komponen, rincian waktu perbaikan (respon mekanik → menunggu → pengerjaan) |
-| **Kondisi Unit** | Kartu per unit: Breakdown / Perlu perhatian / Sehat, PA 30 hari, MTBF, sisa HM ke PM |
+| **Kondisi Unit** | Kartu per unit dengan plat nomor, ilustrasi tipe unit, dan tag status gaya LOTO: B/D / Perlu dicek / RFU, PA 30 hari, MTBF, sisa HM ke PM |
 | **Detail unit** | Klik kode unit di mana saja (atau cari di header): ringkasan, riwayat WO, grafik HM, tren KPI, repeat breakdown — semuanya mengikuti pilihan periode |
 | **Laporan Work Order** | Cari & filter, ubah status, tutup WO, export CSV |
 | **Input Work Order** | Form dengan validasi (unit, jenis, komponen, waktu, delay, biaya) |
@@ -41,7 +41,7 @@ Menu disusun mengikuti alur kerja: **① Catat data → ② Pantau pekerjaan →
 | **Database & Login** | Status Supabase, login User/Admin, pilih mode Database / Demo lokal |
 | **Master Unit** (Admin) | Tambah unit, reset data demo |
 
-Tema terang (bawaan) dan gelap, bisa dipakai di HP. Warna merah selalu menandai masalah terbesar di setiap grafik. Hasil audit UI ada di [docs/UI-AUDIT.md](docs/UI-AUDIT.md).
+Desain "Papan Workshop": plat nomor unit, tag status gaya LOTO, meteran HM, dan ilustrasi per tipe unit. Tema terang (bawaan) dan gelap, bisa dipakai di HP. Warna merah selalu menandai masalah terbesar. Hasil audit UI & aksesibilitas ada di [docs/UI-AUDIT.md](docs/UI-AUDIT.md).
 
 ## Alur data (end-to-end)
 

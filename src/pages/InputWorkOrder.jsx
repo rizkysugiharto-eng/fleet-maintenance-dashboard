@@ -53,7 +53,11 @@ export default function InputWorkOrder() {
     const wo = normalizeWorkOrder(form);
     const found = validateWorkOrder(wo, unitByCode);
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      // Pindahkan fokus ke isian pertama yang salah, supaya pesan errornya langsung terbaca
+      requestAnimationFrame(() => document.querySelector('form [aria-invalid="true"]')?.focus());
+      return;
+    }
     setSaving(true);
     try {
       setSavedId(await addWorkOrder(wo));

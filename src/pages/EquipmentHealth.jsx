@@ -1,38 +1,31 @@
-// Kesehatan Unit: kartu per unit dengan status sederhana (Breakdown / Perlu perhatian / Sehat).
-// Klik kartu untuk membuka detail unit.
+// Kondisi Unit: satu kartu per unit, seperti nomor lambung di bodi alat.
+// Status memakai warna tag LOTO di workshop: merah = B/D (jangan dioperasikan),
+// kuning = perlu dicek, hijau = RFU (siap pakai). Klik kartu untuk membuka detail unit.
 
 import { useMemo, useState } from 'react';
-import { LevelBadge } from '../components/Badges.jsx';
-import { useData } from '../context/DataContext.jsx';
-import { isUnscheduled } from '../data/catalog.js';
-import { formatHours, formatNumber, formatPercent } from '../lib/format.js';
-import { DAY, TARGETS, calcKpi } from '../lib/kpi.js';
-import { pmForecast } from '../lib/planning.js';
 import PageHeader from '../components/PageHeader.jsx';
+import UnitIllustration from '../components/UnitIllustration.jsx';
+import { StatusTag, UnitPlate } from '../components/Workshop.jsx';
+import { useData } from '../context/DataContext.jsx';
+import { formatHours, formatNumber, formatPercent } from '../lib/format.js';
+import { TARGETS } from '../lib/kpi.js';
+import { unitConditions } from '../lib/planning.js';
 
-const LEVEL_TEXT = { critical: 'Breakdown', warning: 'Perlu perhatian', good: 'Sehat' };
+const LEVELS = [
+  { level: 'critical', text: 'B/D' },
+  { level: 'warning', text: 'Perlu dicek' },
+  { level: 'good', text: 'RFU' },
+];
+const CARD_TAG = { critical: 'B/D · Do not operate' };
 
 export default function EquipmentHealth() {
   const { units, workOrders, data, hmIndex, refTime, openUnit } = useData();
   const [filters, setFilters] = useState({ search: '', type: '', level: '' });
 
-  const rows = useMemo(() => {
-    const from = refTime - 30 * DAY;
-    const forecast = new Map(pmForecast({ units, pmLogs: data.pmLogs, hmIndex, refTime }).map((f) => [f.unit.code, f]));
-    return units.map((unit) => {
-      const kpi = calcKpi({ units: [unit], workOrders, hmIndex, from, to: refTime });
-      const active = workOrders.find((wo) => wo.unitCode === unit.code && !wo.end && isUnscheduled(wo.type));
-      const pm = forecast.get(unit.code);
-      const pmLate = pm && (pm.status === 'Terlambat' || pm.status === 'Jatuh tempo');
-      const level = active ? 'critical' : kpi.pa < TARGETS.pa.value || pmLate ? 'warning' : 'good';
-      const reasons = [
-        active && `${active.component ?? 'Breakdown'} · ${active.status}`,
-        !active && kpi.pa < TARGETS.pa.value && `PA 30 hari di bawah ${TARGETS.pa.value}%`,
-        pmLate && `PM ${pm.status.toLowerCase()}`,
-      ].filter(Boolean);
-      return { unit, kpi, pm, level, reasons };
-    });
-  }, [units, workOrders, data.pmLogs, hmIndex, refTime]);
+  const rows = useMemo(
+    () => unitConditions({ units, workOrders, pmLogs: data.pmLogs, hmIndex, refTime }),
+    [units, workOrders, data.pmLogs, hmIndex, refTime],
+  );
 
   const types = [...new Set(units.map((u) => u.type))].sort();
   const search = filters.search.trim().toUpperCase();
@@ -43,21 +36,13 @@ export default function EquipmentHealth() {
       (!filters.level || r.level === filters.level),
   );
   const count = (level) => rows.filter((r) => r.level === level).length;
+  const setLevel = (level) => setFilters({ ...filters, level: filters.level === level ? '' : level });
 
   return (
     <div className="page">
-      <PageHeader
-        step={2}
-        title="Kondisi Unit"
-        actions={
-          <>
-            <LevelBadge level="critical">{count('critical')} breakdown</LevelBadge>
-            <LevelBadge level="warning">{count('warning')} perlu perhatian</LevelBadge>
-            <LevelBadge level="good">{count('good')} sehat</LevelBadge>
-          </>
-        }
-      >
-        Kondisi setiap unit dalam 30 hari terakhir. Klik kartu untuk membuka detail unit.
+      <PageHeader step={2} title="Kondisi Unit">
+        Kondisi setiap unit dalam 30 hari terakhir. Merah = B/D (jangan dioperasikan), kuning = perlu dicek, hijau = RFU (siap
+        pakai). Klik kartu untuk membuka detail unit.
       </PageHeader>
 
       <div className="card filters" role="group" aria-label="Filter unit">
@@ -74,41 +59,52 @@ export default function EquipmentHealth() {
             ))}
           </select>
         </label>
-        <label>
-          Kondisi
-          <select value={filters.level} onChange={(e) => setFilters({ ...filters, level: e.target.value })}>
-            <option value="">Semua kondisi</option>
-            {Object.entries(LEVEL_TEXT).map(([level, text]) => (
-              <option key={level} value={level}>
-                {text}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="seg-group" role="group" aria-label="Saring menurut kondisi">
+          <button type="button" className="seg" aria-pressed={filters.level === ''} onClick={() => setFilters({ ...filters, level: '' })}>
+            Semua <b>{rows.length}</b>
+          </button>
+          {LEVELS.map(({ level, text }) => (
+            <button key={level} type="button" className="seg" aria-pressed={filters.level === level} onClick={() => setLevel(level)}>
+              <StatusTag level={level}>{text}</StatusTag>
+              <b>{count(level)}</b>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="unit-grid">
         {shown.map(({ unit, kpi, pm, level, reasons }) => (
-          <button key={unit.code} type="button" className={`unit-card level-${level}`} onClick={() => openUnit(unit.code)}>
-            <div className="unit-card-head">
-              <span className="unit-code">{unit.code}</span>
-              <LevelBadge level={level}>{LEVEL_TEXT[level]}</LevelBadge>
-            </div>
-            <span className="muted small">
-              {unit.type} · {[unit.brand, unit.model].filter(Boolean).join(' ') || `Site ${unit.siteId}`}
+          <button
+            key={unit.code}
+            type="button"
+            className="unit-card"
+            onClick={() => openUnit(unit.code)}
+          >
+            <span className={`edge edge-${level}`} />
+            <span className="unit-card-body">
+              <span className="unit-card-head">
+                <UnitPlate code={unit.code} />
+                <StatusTag level={level}>{CARD_TAG[level]}</StatusTag>
+              </span>
+              <span className="unit-card-type">
+                <UnitIllustration type={unit.type} width={64} />
+                <span>
+                  {unit.type} · {[unit.brand, unit.model].filter(Boolean).join(' ') || 'Model tidak tercatat'} · Site {unit.siteId}
+                </span>
+              </span>
+              <span className="unit-stats">
+                <span>
+                  PA 30 hari<b className={kpi.pa != null && kpi.pa < TARGETS.pa.value ? 'off' : undefined}>{formatPercent(kpi.pa)}</b>
+                </span>
+                <span>
+                  MTBF<b>{kpi.mtbf == null ? '–' : formatHours(kpi.mtbf).replace(' jam', ' j')}</b>
+                </span>
+                <span>
+                  HM ke PM<b className={pm?.remaining != null && pm.remaining < 0 ? 'off' : undefined}>{pm?.remaining == null ? '–' : formatNumber(pm.remaining)}</b>
+                </span>
+              </span>
+              <span className="unit-card-reason">{reasons.length > 0 ? reasons.join(' · ') : 'Siap operasi'}</span>
             </span>
-            <div className="unit-stats">
-              <span>
-                PA 30h<b>{formatPercent(kpi.pa)}</b>
-              </span>
-              <span>
-                MTBF<b>{kpi.mtbf == null ? '–' : formatHours(kpi.mtbf).replace(' jam', 'j')}</b>
-              </span>
-              <span>
-                HM ke PM<b>{pm?.remaining == null ? '–' : formatNumber(pm.remaining)}</b>
-              </span>
-            </div>
-            {reasons.length > 0 && <span className="small muted">{reasons.join(' · ')}</span>}
           </button>
         ))}
       </div>

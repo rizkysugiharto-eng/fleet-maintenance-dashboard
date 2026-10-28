@@ -31,6 +31,7 @@ import { DAY, TARGETS, buildBuckets, calcKpi, kpiSeries, periodFromDates } from 
 import { formatDate } from '../data/simulate.js';
 import { useChartColors } from '../lib/useChartColors.js';
 import PageHeader from '../components/PageHeader.jsx';
+import TableWrap from '../components/TableWrap.jsx';
 
 const percentTick = (v) => `${v}%`;
 const hoursValue = (v) => `${formatNumber(v)} jam`;
@@ -338,7 +339,7 @@ export default function Dashboard() {
           </ChartCard>
 
           <ChartCard title="Ringkasan per tipe unit" subtitle={`Diurutkan dari downtime terbesar · ✓ / ✕ = PA sesuai / di bawah target ${TARGETS.pa.value}%`}>
-            <div className="table-wrap">
+            <TableWrap label="Tabel ringkasan per tipe unit">
               <table>
                 <thead>
                   <tr>
@@ -384,7 +385,7 @@ export default function Dashboard() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
           </ChartCard>
 
           <div className="grid-2">

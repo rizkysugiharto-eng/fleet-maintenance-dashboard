@@ -14,6 +14,7 @@ import { DAY, TARGETS, meetsTarget } from '../lib/kpi.js';
 import { PM_STATUS_LEVEL } from '../lib/planning.js';
 import { listWeeks, weeklyReport } from '../lib/report.js';
 import { useChartColors } from '../lib/useChartColors.js';
+import TableWrap from '../components/TableWrap.jsx';
 
 const PM_ROWS = 8; // baris PM yang dicetak (paling mendesak dulu)
 
@@ -124,7 +125,7 @@ export default function Report() {
 
           <section className="report-section">
             <h3>2. KPI minggu ini dibanding minggu lalu</h3>
-            <div className="table-wrap">
+            <TableWrap label="Tabel KPI minggu ini">
               <table>
                 <thead>
                   <tr>
@@ -164,12 +165,12 @@ export default function Report() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
           </section>
 
           <section className="report-section">
             <h3>3. Unit dengan downtime terlama</h3>
-            <div className="table-wrap">
+            <TableWrap label="Tabel unit dengan downtime terlama">
               <table>
                 <thead>
                   <tr>
@@ -209,7 +210,7 @@ export default function Report() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
           </section>
 
           <div className="report-grid">
@@ -290,7 +291,7 @@ export default function Report() {
               <p className="muted small">Rencana PM hanya ditampilkan untuk minggu terakhir (memakai HM terbaru).</p>
             ) : rep.pmNext.length ? (
               <>
-                <div className="table-wrap">
+                <TableWrap label="Tabel rencana PM 14 hari">
                   <table>
                     <thead>
                       <tr>
@@ -319,7 +320,7 @@ export default function Report() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableWrap>
                 {rep.pmNext.length > PM_ROWS && (
                   <p className="muted small">
                     +{rep.pmNext.length - PM_ROWS} unit lain jatuh tempo dalam 14 hari — lihat menu Perencanaan PM.

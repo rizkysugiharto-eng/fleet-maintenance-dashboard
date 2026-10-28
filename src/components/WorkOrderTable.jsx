@@ -4,13 +4,14 @@ import { useData } from '../context/DataContext.jsx';
 import { formatDateTimeText, formatNumber, formatRupiahCompact } from '../lib/format.js';
 import { hoursBetween, toMs } from '../lib/kpi.js';
 import { StatusBadge, TypeTag } from './Badges.jsx';
+import TableWrap from './TableWrap.jsx';
 
 export const durationOf = (wo) => (wo.end ? hoursBetween(toMs(wo.start), toMs(wo.end)) : null);
 
 export default function WorkOrderTable({ workOrders, showUnit = true, limit = 200 }) {
   const { openUnit } = useData();
   return (
-    <div className="table-wrap">
+    <TableWrap label="Tabel work order">
       <table>
         <thead>
           <tr>
@@ -59,6 +60,6 @@ export default function WorkOrderTable({ workOrders, showUnit = true, limit = 20
         </tbody>
       </table>
       {workOrders.length > limit && <p className="muted small">Menampilkan {limit} dari {workOrders.length} WO.</p>}
-    </div>
+    </TableWrap>
   );
 }

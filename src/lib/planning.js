@@ -1,7 +1,7 @@
 // Perencanaan PM berbasis HM, PM compliance, backlog, dan ringkasan per unit (Unit 360).
 
 import { isUnscheduled, pmTypeForHm } from '../data/catalog.js';
-import { DAY, calcKpi, clipToPeriod, hmAt, hoursBetween, toMs } from './kpi.js';
+import { DAY, TARGETS, calcKpi, clipToPeriod, hmAt, hoursBetween, toMs } from './kpi.js';
 
 export const PM_TOLERANCE = 0.1; // PM dianggap tepat waktu bila deviasi HM ≤ ±10% interval
 
@@ -50,6 +50,32 @@ export function pmForecast({ units, pmLogs, hmIndex, refTime }) {
       };
     })
     .sort((a, b) => (a.remaining ?? Infinity) - (b.remaining ?? Infinity));
+}
+
+// Kondisi setiap unit untuk papan kerja (Kondisi Unit & Briefing Pagi), 30 hari terakhir:
+// critical = sedang breakdown (B/D), warning = PA di bawah target atau PM telat/jatuh tempo, good = RFU.
+// Urutan hasil: B/D dulu, lalu yang perlu dicek, lalu RFU.
+const LEVEL_ORDER = { critical: 0, warning: 1, good: 2 };
+
+export function unitConditions({ units, workOrders, pmLogs, hmIndex, refTime }) {
+  const from = refTime - 30 * DAY;
+  const forecast = new Map(pmForecast({ units, pmLogs, hmIndex, refTime }).map((f) => [f.unit.code, f]));
+  return units
+    .map((unit) => {
+      const kpi = calcKpi({ units: [unit], workOrders, hmIndex, from, to: refTime });
+      const active = workOrders.find((wo) => wo.unitCode === unit.code && !wo.end && isUnscheduled(wo.type)) ?? null;
+      const pm = forecast.get(unit.code);
+      const pmLate = Boolean(pm && (pm.status === 'Terlambat' || pm.status === 'Jatuh tempo'));
+      const paLow = kpi.pa != null && kpi.pa < TARGETS.pa.value;
+      const level = active ? 'critical' : paLow || pmLate ? 'warning' : 'good';
+      const reasons = [
+        active && `${active.component ?? 'Breakdown'} · ${active.status}`,
+        !active && paLow && `PA 30 hari di bawah ${TARGETS.pa.value}%`,
+        pmLate && `PM ${pm.status.toLowerCase()}`,
+      ].filter(Boolean);
+      return { unit, kpi, pm, active, level, reasons };
+    })
+    .sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.unit.code.localeCompare(b.unit.code));
 }
 
 export const PM_STATUS_LEVEL = {
