@@ -139,4 +139,13 @@ ditulis sebagai teks.
 | 13 | Header HP menempel 194 px (23% layar) | Header satu baris ±65 px; site, peran, tema pindah ke menu |
 | 14 | Target sentuh 21–30 px di HP | Minimal 44 px di HP |
 
+## Untuk pengunjung awam
+
+| Risiko | Penanganan |
+|---|---|
+| Istilah lapangan (B/D, RFU, PA, MTBF, MTTR, HM) tidak dipahami recruiter non-teknis | Kotak sambutan berisi kamus istilah; tombol "?" di setiap KPI; keterangan saat kursor diarahkan ke tag status |
+| Banyak warna merah dikira aplikasi error | Kotak sambutan menjelaskan bahwa data fiktif sengaja dibuat bermasalah; header menulis "Data contoh" |
+| Kotak "cara kerja" mudah terlewat | Terbuka otomatis untuk pengunjung baru (kuning, menonjol); setelah ditutup, aplikasi mengingatnya |
+| Legenda tag terlalu singkat | Ditulis dengan bahasa sehari-hari: "13 unit siap pakai · 6 unit masih jalan, perlu dicek · 9 unit rusak" |
+
 Hasil akhir axe-core: **0 pelanggaran** di semua halaman (terang, gelap, HP, dan menu HP terbuka).

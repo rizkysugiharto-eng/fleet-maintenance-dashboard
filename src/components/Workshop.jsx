@@ -3,14 +3,22 @@
 // - StatusTag : status unit seperti tag LOTO di workshop (selalu ada teks, bukan warna saja)
 // - Odometer  : hour meter seperti meteran mekanis
 
+import { GLOSSARY } from '../data/catalog.js';
+
 const TAG_TEXT = { critical: 'B/D', warning: 'Perlu dicek', good: 'RFU' };
+// Keterangan saat kursor diarahkan ke tag (pengunjung awam)
+const TAG_HINT = { critical: GLOSSARY.BD.text, warning: GLOSSARY.CEK.text, good: GLOSSARY.RFU.text };
 
 export function UnitPlate({ code, size = 'md' }) {
   return <span className={`plate plate-${size}`}>{code}</span>;
 }
 
 export function StatusTag({ level, children }) {
-  return <span className={`loto loto-${level}`}>{children ?? TAG_TEXT[level]}</span>;
+  return (
+    <span className={`loto loto-${level}`} title={TAG_HINT[level]}>
+      {children ?? TAG_TEXT[level]}
+    </span>
+  );
 }
 
 export function Odometer({ value, digits = 6 }) {

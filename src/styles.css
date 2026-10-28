@@ -1794,10 +1794,18 @@ tbody tr:last-child td {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: 6px 18px;
   margin: 0;
+  padding: 0;
+  list-style: none;
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+.fleet-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .kpi-strip {
@@ -1982,6 +1990,142 @@ tbody tr:last-child td {
   border-radius: 6px;
   background: var(--page);
   font-size: 0.875rem;
+}
+
+/* Kotak sambutan untuk pengunjung baru */
+.intro {
+  border: 2px solid var(--plate);
+}
+
+.intro[open] {
+  background: var(--brand-soft);
+}
+
+.intro summary::marker {
+  color: var(--accent-text);
+}
+
+.intro-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 16px;
+}
+
+.intro-lead {
+  margin: 0;
+  padding: 14px 16px 0;
+  max-width: 900px;
+  font-size: 0.9375rem;
+}
+
+.intro .howto-steps {
+  padding-bottom: 6px;
+}
+
+.intro-h {
+  margin: 4px 16px 0;
+  font-family: var(--font-cond);
+  font-size: 1.0625rem;
+}
+
+.glossary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 18px;
+  margin: 6px 0 0;
+  padding: 0 16px;
+}
+
+.glossary div {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+.glossary dt {
+  flex: none;
+  min-width: 76px;
+  font-family: var(--font-cond);
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+.glossary dd {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.intro-close {
+  align-self: flex-start;
+  min-height: 44px;
+  margin: 12px 16px 0;
+}
+
+/* Tombol "?" penjelasan istilah */
+.kpi-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.infotip {
+  position: relative;
+  display: inline-flex;
+}
+
+.infotip-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--axis);
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-family: var(--font-cond);
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* area sentuh 44 px tanpa memperbesar lingkarannya */
+.infotip-btn::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
+.infotip-btn[aria-expanded='true'] {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+.infotip-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -6px;
+  z-index: 30;
+  width: min(260px, 70vw);
+  padding: 10px 12px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font);
+  font-weight: 400;
+}
+
+.infotip-pop[hidden] {
+  display: none;
 }
 
 /* Jendela "Tindak lanjut" unit B/D */

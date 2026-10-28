@@ -5,12 +5,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
+import InfoTip from '../components/InfoTip.jsx';
 import Modal from '../components/Modal.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import UnitIllustration from '../components/UnitIllustration.jsx';
 import { StatusTag, UnitPlate } from '../components/Workshop.jsx';
 import { useData } from '../context/DataContext.jsx';
-import { STATUSES } from '../data/catalog.js';
+import { GLOSSARY, STATUSES } from '../data/catalog.js';
 import { componentPareto } from '../lib/analytics.js';
 import { formatDateMs, formatHours, formatNumber, formatPercent } from '../lib/format.js';
 import { DAY, TARGETS, calcKpi, meetsTarget, toMs } from '../lib/kpi.js';
@@ -129,7 +130,9 @@ function FollowUp({ workOrder, unit, refTime, onDone }) {
 }
 
 export default function Home() {
-  const { units, workOrders, data, hmIndex, refTime, openUnit, unitByCode, canWrite, prefs } = useData();
+  const { units, workOrders, data, hmIndex, refTime, openUnit, unitByCode, canWrite, prefs, setPref } = useData();
+  // Kotak sambutan terbuka otomatis untuk pengunjung baru; sekali ditutup, aplikasi mengingatnya
+  const introOpen = !prefs.introClosed;
   const [followUp, setFollowUp] = useState(null);
 
   const s = useMemo(() => {
@@ -159,10 +162,10 @@ export default function Home() {
   const agingWorst = s.aging.reduce((w, a) => (a.value > w.value ? a : w), s.aging[0]);
 
   const kpiRows = [
-    { key: 'pa', label: 'PA · ketersediaan unit', value: s.kpi.pa, text: formatPercent(s.kpi.pa) },
-    { key: 'mtbf', label: 'MTBF · jam sebelum rusak', value: s.kpi.mtbf, text: formatHours(s.kpi.mtbf) },
-    { key: 'mttr', label: 'MTTR · lama perbaikan', value: s.kpi.mttr, text: formatHours(s.kpi.mttr) },
-    { key: 'ma', label: 'MA · ketersediaan mekanis', value: s.kpi.ma, text: formatPercent(s.kpi.ma) },
+    { key: 'pa', term: 'PA', label: 'PA · ketersediaan unit', value: s.kpi.pa, text: formatPercent(s.kpi.pa) },
+    { key: 'mtbf', term: 'MTBF', label: 'MTBF · jam sebelum rusak', value: s.kpi.mtbf, text: formatHours(s.kpi.mtbf) },
+    { key: 'mttr', term: 'MTTR', label: 'MTTR · lama perbaikan', value: s.kpi.mttr, text: formatHours(s.kpi.mttr) },
+    { key: 'ma', term: 'MA', label: 'MA · ketersediaan mekanis', value: s.kpi.ma, text: formatPercent(s.kpi.ma) },
   ];
 
   return (
@@ -179,29 +182,49 @@ export default function Home() {
         Tiga hal yang dibahas di meeting pagi: unit yang rusak, servis yang jatuh tempo, dan pekerjaan yang tertunda.
       </PageHeader>
 
-      <details className="howto card">
+      <details className="howto card intro" open={introOpen} onToggle={(e) => setPref('introClosed', !e.currentTarget.open)}>
         <summary>
-          <span className="howto-title">Baru pertama kali? Lihat cara kerja aplikasi ini</span>
-          <span className="muted small">4 langkah, dari catat data sampai tindak lanjut</span>
+          <span className="howto-title">{introOpen ? 'Selamat datang · cara membaca halaman ini' : 'Baru pertama kali? Lihat cara kerja aplikasi ini'}</span>
+          <span className="muted small">{introOpen ? 'Klik di sini untuk menutup' : '4 langkah + arti istilah'}</span>
         </summary>
-        <ol className="howto-steps">
-          {HOW_IT_WORKS.map((step, i) => (
-            <li key={step.title}>
-              <span className="step-dot" aria-hidden="true">
-                {i + 1}
-              </span>
-              <span>
-                <b>{step.title}</b>
-                <br />
-                <span className="muted small">{step.text}</span>
-                <br />
-                <Link to={step.to} className="small">
-                  {step.cta} →
-                </Link>
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div className="intro-body">
+          <p className="intro-lead">
+            Ini contoh <b>papan kerja planner maintenance alat berat</b> di tambang. Setiap pagi planner melihat unit yang rusak,
+            servis yang jatuh tempo, dan pekerjaan yang tertunda, lalu memutuskan apa yang dikerjakan hari ini.{' '}
+            <b>Semua data fiktif</b> dan sengaja dibuat bermasalah (banyak unit rusak, perbaikan lama) supaya ada yang bisa
+            dianalisis, jadi warna merah di halaman ini memang disengaja.
+          </p>
+          <ol className="howto-steps">
+            {HOW_IT_WORKS.map((step, i) => (
+              <li key={step.title}>
+                <span className="step-dot" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span>
+                  <b>{step.title}</b>
+                  <br />
+                  <span className="muted small">{step.text}</span>
+                  <br />
+                  <Link to={step.to} className="small">
+                    {step.cta} →
+                  </Link>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <h2 className="intro-h">Arti istilah</h2>
+          <dl className="glossary">
+            {Object.values(GLOSSARY).map((g) => (
+              <div key={g.term}>
+                <dt>{g.term}</dt>
+                <dd>{g.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <button type="button" className="btn-primary intro-close" onClick={() => setPref('introClosed', true)}>
+            Mengerti, tutup penjelasan
+          </button>
+        </div>
       </details>
 
       <section className="fleet-strip card card-pad" aria-labelledby="fleet-title">
@@ -218,10 +241,17 @@ export default function Home() {
             s.levels[level] ? <span key={level} className={`edge-${level}`} style={{ flexGrow: s.levels[level] }} /> : null,
           )}
         </div>
-        <p className="fleet-legend">
-          <StatusTag level="good" /> {s.levels.good} unit <StatusTag level="warning" /> {s.levels.warning} unit{' '}
-          <StatusTag level="critical" /> {s.levels.critical} unit
-        </p>
+        <ul className="fleet-legend">
+          <li>
+            <StatusTag level="good" /> {s.levels.good} unit siap pakai
+          </li>
+          <li>
+            <StatusTag level="warning" /> {s.levels.warning} unit masih jalan, perlu dicek
+          </li>
+          <li>
+            <StatusTag level="critical" /> {s.levels.critical} unit rusak
+          </li>
+        </ul>
       </section>
 
       <section className="kpi-strip" aria-label="Kondisi armada 30 hari terakhir dibanding target">
@@ -231,7 +261,10 @@ export default function Home() {
           const target = `${t.higherIsBetter ? '≥' : '≤'} ${formatNumber(t.value)}${t.unit === '%' ? '%' : ` ${t.unit}`}`;
           return (
             <div key={k.key} className={`card kpi-tile${ok === false ? ' off' : ''}`}>
-              <span className="kpi-label">{k.label}</span>
+              <span className="kpi-tile-head">
+                <span className="kpi-label">{k.label}</span>
+                <InfoTip id={k.term} />
+              </span>
               <span className="kpi-tile-value">{k.text}</span>
               {ok != null && (
                 <span className={`small ${ok ? 'status-good' : 'status-critical'}`}>

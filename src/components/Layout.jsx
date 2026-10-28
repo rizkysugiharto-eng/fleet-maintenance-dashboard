@@ -135,7 +135,7 @@ function Preferences({ className }) {
 }
 
 export default function Layout({ children }) {
-  const { unit360, role, refTime } = useData();
+  const { unit360, role, refTime, source } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const headerRef = useRef(null);
@@ -213,7 +213,9 @@ export default function Layout({ children }) {
           </span>
         </Link>
         <div className="header-tools">
-          <span className="data-date">Data s.d. {formatDateMs(refTime - DAY)}</span>
+          <span className="data-date">
+            {source.mode === 'local' ? 'Data contoh' : 'Data'} s.d. {formatDateMs(refTime - DAY)}
+          </span>
           <UnitSearch />
           <Preferences className="header-prefs" />
         </div>
