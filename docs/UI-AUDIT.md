@@ -146,6 +146,6 @@ ditulis sebagai teks.
 | Istilah lapangan (B/D, RFU, PA, MTBF, MTTR, HM) tidak dipahami recruiter non-teknis | Kotak sambutan berisi kamus istilah; tombol "?" di setiap KPI; keterangan saat kursor diarahkan ke tag status |
 | Banyak warna merah dikira aplikasi error | Kotak sambutan menjelaskan bahwa data fiktif sengaja dibuat bermasalah; header menulis "Data contoh" |
 | Kotak "cara kerja" mudah terlewat | Terbuka otomatis untuk pengunjung baru (kuning, menonjol); setelah ditutup, aplikasi mengingatnya |
-| Legenda tag terlalu singkat | Ditulis dengan bahasa sehari-hari: "13 unit siap pakai · 6 unit masih jalan, perlu dicek · 9 unit rusak" |
+| Legenda tag memakai istilah lapangan (RFU / Perlu dicek / B/D) | Tetap dipakai supaya terasa seperti papan kerja asli; artinya dijelaskan di kamus kotak sambutan dan muncul saat kursor diarahkan ke tag |
 
 Hasil akhir axe-core: **0 pelanggaran** di semua halaman (terang, gelap, HP, dan menu HP terbuka).

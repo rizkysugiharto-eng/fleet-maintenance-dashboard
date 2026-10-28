@@ -243,13 +243,13 @@ export default function Home() {
         </div>
         <ul className="fleet-legend">
           <li>
-            <StatusTag level="good" /> {s.levels.good} unit siap pakai
+            <StatusTag level="good" /> {s.levels.good} unit
           </li>
           <li>
-            <StatusTag level="warning" /> {s.levels.warning} unit masih jalan, perlu dicek
+            <StatusTag level="warning" /> {s.levels.warning} unit
           </li>
           <li>
-            <StatusTag level="critical" /> {s.levels.critical} unit rusak
+            <StatusTag level="critical" /> {s.levels.critical} unit
           </li>
         </ul>
       </section>
