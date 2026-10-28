@@ -130,21 +130,28 @@ const SHAPES = {
       <Hubs points={[[20, 45], [37, 45], [78, 45]]} />
     </>
   ),
+  // Pickup double cabin: model LV yang paling umum di tambang
   'Light Vehicle': (
     <>
       {/* bendera buggy whip, wajib untuk LV di area tambang */}
-      <path d="M10 33 L10 4" fill="none" stroke={INK} strokeWidth="1.5" />
-      <path d="M10 4 L21 7 L10 10 Z" fill="#b42318" />
+      <path d="M9 30 L9 4" fill="none" stroke={INK} strokeWidth="1.5" />
+      <path d="M9 4 L20 7 L9 10 Z" fill="#b42318" />
       <g {...stroke}>
-        <path d="M6 43 L6 32 L36 32 L42 20 L68 20 L76 32 L90 34 L90 43 Z" fill="#fffdf8" />
-        <path d="M44 23 L54 23 L54 31 L40 31 Z" fill={GLASS} />
-        <path d="M57 23 L66 23 L72 31 L57 31 Z" fill={GLASS} />
-        <rect x="50" y="16" width="8" height="4" fill={BODY} />
-        <rect x="7" y="37" width="82" height="2.5" fill={BODY} stroke="none" />
-        <circle cx="22" cy="45" r="8" fill={INK} />
-        <circle cx="74" cy="45" r="8" fill={INK} />
+        {/* bak belakang + kabin 4 pintu + kap mesin */}
+        <path d="M5 42 L5 30 L33 30 L33 18 Q33 16 35 16 L63 16 L72 29 L88 31 Q91 32 91 35 L91 42 Z" fill="#fffdf8" />
+        <path d="M33 30 L33 41" fill="none" strokeWidth="1.5" />
+        <path d="M36 19 L48 19 L48 28 L36 28 Z" fill={GLASS} />
+        <path d="M51 19 L62 19 L68 28 L51 28 Z" fill={GLASS} />
+        <path d="M49.5 28 L49.5 41" fill="none" strokeWidth="1.5" />
+        {/* light bar di atap */}
+        <rect x="42" y="12" width="14" height="4" fill={BODY} />
+        {/* bull bar depan */}
+        <rect x="90" y="32" width="4" height="9" fill={INK} />
+        <rect x="6" y="35" width="84" height="2.5" fill={BODY} stroke="none" />
+        <circle cx="20" cy="44" r="8" fill={INK} />
+        <circle cx="76" cy="44" r="8" fill={INK} />
       </g>
-      <Hubs points={[[22, 45], [74, 45]]} />
+      <Hubs points={[[20, 44], [76, 44]]} />
     </>
   ),
 };
